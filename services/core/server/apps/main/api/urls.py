@@ -9,7 +9,7 @@ router = Router(
     [
         path('posts/', views.BlogPostCreate.as_view(), name='blog_post_create'),
         path(
-            'posts/<int:id>',
+            'posts/<uuid:id>',
             views.BlogPostGet.as_view(),
             name='blog_post_get',
         ),

@@ -1,6 +1,7 @@
 """Value objects of blog posts."""
 
 from typing import Annotated, final
+from uuid import UUID
 
 import msgspec
 
@@ -21,4 +22,4 @@ class BlogPostCreatePayload(msgspec.Struct):
 class BlogPostFullPayload(BlogPostCreatePayload):
     """Used to represent existing ``BlogPost`` models."""
 
-    id: int
+    id: UUID

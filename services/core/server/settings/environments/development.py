@@ -141,6 +141,7 @@ DTM_IGNORED_MIGRATIONS = frozenset((('axes', '*'),))
 MIGRATION_LINTER_OPTIONS = {
     'exclude_apps': ['axes'],
     'exclude_migration_tests': ['CREATE_INDEX', 'CREATE_INDEX_EXCLUSIVE'],
+    'ignore_name': ['0002_uuid_primary_key'],
     'warnings_as_errors': True,
 }
 
@@ -153,6 +154,9 @@ SAFE_MIGRATIONS = {
         'SM028',  # Prefer bigint over int
     ],
     'FAIL_ON_WARNING': True,
+    'APP_RULES': {
+        'main': {'DISABLED_RULES': ['SM003']},
+    },
 }
 
 

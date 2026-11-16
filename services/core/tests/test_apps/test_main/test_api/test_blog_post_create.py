@@ -42,7 +42,7 @@ def test_blog_post_create(dmr_client: DMRClient) -> None:
 
     assert response.status_code == HTTPStatus.CREATED
     assert snap == snapshot([
-        'INSERT INTO main_blogpost (...) VALUES (...) RETURNING ...',
+        'INSERT INTO main_blogpost (...) VALUES (...)',
     ])
     blog_post = msgspec.convert(response.json(), type=BlogPostFullPayload)
     assert _version(blog_post.id) == 7
