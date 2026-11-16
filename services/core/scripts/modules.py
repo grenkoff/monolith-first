@@ -1,7 +1,6 @@
 """Reports modules of core that break the boundaries between modules."""
 
 import ast
-import re
 import sys
 from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
@@ -9,7 +8,8 @@ from typing import Final, Protocol, final, override
 
 import attrs
 
-_PUBLIC: Final = re.compile(r'server\.apps\.(?P<module>\w+)\.public\b')
+from scripts.imports import PUBLIC_PACKAGE, ImportBindings
+
 _TECHNICAL: Final = frozenset((
     'api',
     'auth',
@@ -48,20 +48,10 @@ class PublicImports(Names):
     def names(self) -> Iterator[str]:
         """Yields the module of each imported public package."""
         for node in ast.walk(ast.parse(self._text)):
-            for source in self._sources(node):
-                found = _PUBLIC.match(source)
+            for source, _ in ImportBindings(node).pairs():
+                found = PUBLIC_PACKAGE.match(source)
                 if found:
                     yield found['module']
-
-    def _sources(self, node: ast.AST) -> Sequence[str]:
-        """Returns the full names that an import statement brings in."""
-        match node:
-            case ast.Import(names=aliases):
-                return [alias.name for alias in aliases]
-            case ast.ImportFrom(module=str() as module, names=aliases):
-                return [f'{module}.{alias.name}' for alias in aliases]
-            case _:
-                return []
 
 
 @final
