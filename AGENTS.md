@@ -160,6 +160,8 @@ Modules of the monolith:
 8. **Every entity has a UUIDv7 primary key** (`uuid.uuid7()`); ids in the
    HTTP API, events and the outbox are UUIDv7 too. They are made anywhere
    without coordination, sort by time and stay valid when a module leaves.
+   Users too: the user model is `accounts.User`; refer to it through
+   `settings.AUTH_USER_MODEL`, never `auth.User`.
 9. **`server/common` knows no domain**: technical code only, never a module
    that others share.
 10. **One PostgreSQL by default.** Another store (a search engine, a cache,
@@ -223,6 +225,8 @@ Machine-enforced by `make architecture`, a CI job of its own:
   `common`, `core`, `helpers`, `infra`, `logging`, `shared`, `utils`);
 - `scripts/relations.py`: no foreign key, one-to-one or many-to-many
   relation between models of two modules;
+- `scripts/keys.py`: every model of a module has a UUIDv7 primary key
+  (`UUIDField` with `default=uuid.uuid7`);
 - `scripts/transactions.py`: no call to another module inside a
   transaction;
 - `scripts/compose.py`: only `core` publishes ports; a database serves one
@@ -1004,7 +1008,7 @@ a pull request merges only with every required job green.
 | commits | commit messages and the pull request title (commitlint) |
 | secrets | gitleaks over the changes and the history |
 | contracts | `make contracts`: `buf lint`, `buf format`, `buf breaking`; generated code and `docs/patterns.md` up to date |
-| architecture | `make architecture`: import-linter, calls and names of modules, relations between modules, calls to other modules inside transactions, ports and databases in Compose |
+| architecture | `make architecture`: import-linter, calls and names of modules, relations between modules, UUIDv7 primary keys, calls to other modules inside transactions, ports and databases in Compose |
 | rust | rustfmt, clippy, tests, coverage (80% overall, 100% in `domain/`), `eo-lint`, cargo-machete, cargo-deny |
 | rust-mutants | cargo-mutants: zero survivors |
 | core | the wemake-django-template pipeline (ruff, wemake-python-styleguide, mypy, import-linter, pytest, schemathesis, Django checks, migration linters, deptry), pip-audit, vulture, transaction check, coverage (80% overall, 100% in `logic/`), mutmut |
