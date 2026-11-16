@@ -90,6 +90,13 @@ jobs:
         run: rustup show active-toolchain || rustup toolchain install
       - run: make contracts
 
+  architecture:
+    name: Architecture (no distributed monolith)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: make architecture
+
   rust:
     name: Rust (fmt, clippy, coverage, eo-lint)
     runs-on: ubuntu-latest
