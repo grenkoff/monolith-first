@@ -1,5 +1,6 @@
 """Tests of the blog post reading endpoint."""
 
+import uuid
 from http import HTTPStatus
 
 import msgspec
@@ -43,9 +44,8 @@ def test_blog_post_get(dmr_client: DMRClient, blog_post: BlogPost) -> None:
 @pytest.mark.django_db
 def test_blog_post_get_missing(dmr_client: DMRClient) -> None:
     """Ensures that blog posts can be fetched."""
-    response = dmr_client.get(
-        reverse('api:v1:main:blog_post_get', kwargs={'id': 0}),
-    )
+    posts = reverse('api:v1:main:blog_post_create')
+    response = dmr_client.get(f'{posts}{uuid.uuid7()}')
 
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert response.json() == {

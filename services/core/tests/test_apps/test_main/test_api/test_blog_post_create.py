@@ -2,6 +2,7 @@
 
 from http import HTTPStatus
 from typing import final
+from uuid import UUID
 
 import msgspec
 import pytest
@@ -25,6 +26,11 @@ class _BlogPostCreateFactory(MsgspecFactory[BlogPostCreatePayload]):
     __check_model__ = True
 
 
+def _version(identifier: object) -> int | None:
+    """Returns the UUID version of an identifier, or nothing for anything else."""
+    return identifier.version if isinstance(identifier, UUID) else None
+
+
 @pytest.mark.django_db
 def test_blog_post_create(dmr_client: DMRClient) -> None:
     """Ensures that blog posts can be created."""
@@ -39,4 +45,5 @@ def test_blog_post_create(dmr_client: DMRClient) -> None:
         'INSERT INTO main_blogpost (...) VALUES (...) RETURNING ...',
     ])
     blog_post = msgspec.convert(response.json(), type=BlogPostFullPayload)
+    assert _version(blog_post.id) == 7
     BlogPost.objects.get(pk=blog_post.id)
