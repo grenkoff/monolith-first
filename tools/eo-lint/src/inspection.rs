@@ -730,6 +730,19 @@ mod tests {
     }
 
     #[test]
+    fn rejects_grpc_clients_in_services() {
+        let code = "use contracts::hello::v1::{hello_service_client::HelloServiceClient};
+            struct Remote { client: hello_service_client::HelloServiceClient<u8> }";
+        assert_eq!(rules_of("src/infra/remote.rs", code), ["EO012", "EO012"]);
+    }
+
+    #[test]
+    fn allows_grpc_clients_in_tests() {
+        let code = "use contracts::hello::v1::hello_service_client::HelloServiceClient;";
+        assert_eq!(rules_of("tests/grpc.rs", code), Vec::<String>::new());
+    }
+
+    #[test]
     fn rejects_foreign_awaits_inside_transactions() {
         let code = "struct Store;
             impl Store {
