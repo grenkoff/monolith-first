@@ -24,6 +24,7 @@ from server.apps.greetings.api import urls as greetings_api_urls
 from server.apps.main import urls as main_urls
 from server.apps.main.api import urls as main_api_urls
 from server.apps.main.views import index
+from server.apps.orders.api import urls as orders_api_urls
 
 admin.autodiscover()
 
@@ -31,6 +32,7 @@ router_v1 = Router('v1/')
 router_v1.include(main_api_urls.router, namespace='main')
 router_v1.include(greetings_api_urls.router, namespace='greetings')
 router_v1.include(catalog_api_urls.router, namespace='catalog')
+router_v1.include(orders_api_urls.router, namespace='orders')
 
 router = Router('api/')
 router.include(router_v1, namespace='v1')
