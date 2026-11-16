@@ -8,5 +8,6 @@ set -o xtrace
 lint-imports
 python -m scripts.modules
 python -m scripts.relations
+python -m scripts.keys
 python -m scripts.transactions
 python -m scripts.compose
