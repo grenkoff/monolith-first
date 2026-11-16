@@ -4,7 +4,8 @@ from typing import Annotated, final
 
 import msgspec
 
-from server.apps.greetings.logic.constants import NAME_MAX_LENGTH, NAME_PATTERN
+from server.apps.greetings.logic.constants import NAME_MAX_LENGTH
+from server.common.text import VISIBLE_CHARACTER
 
 
 @final
@@ -16,7 +17,7 @@ class GreetingRequest(msgspec.Struct, frozen=True):
         msgspec.Meta(
             min_length=1,
             max_length=NAME_MAX_LENGTH,
-            pattern=NAME_PATTERN,
+            pattern=VISIBLE_CHARACTER,
         ),
     ]
     polite: bool = False
