@@ -1,6 +1,7 @@
 """Database models of the main app."""
 
 import textwrap
+import uuid
 from typing import final, override
 
 from django.db import models
@@ -12,6 +13,7 @@ from server.apps.main.logic.constants import POST_TITLE_MAX_LENGTH
 class BlogPost(models.Model):
     """Example blog post model with fixtures, factories and migration tests."""
 
+    id = models.UUIDField(primary_key=True, default=uuid.uuid7, editable=False)
     title = models.CharField(max_length=POST_TITLE_MAX_LENGTH)
     body = models.TextField()
 

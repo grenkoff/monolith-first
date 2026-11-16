@@ -9,6 +9,8 @@ import attrs
 from server.apps.main.logic.value_objects import BlogPostFullPayload
 
 if TYPE_CHECKING:
+    from uuid import UUID
+
     from server.apps.main.infra import mappers, repository
 
 
@@ -20,6 +22,6 @@ class GetBlogPost:
     _repository: repository.BlogPostRepo
     _mapper: mappers.BlogPostMapper
 
-    def __call__(self, blog_post_id: int) -> BlogPostFullPayload:
+    def __call__(self, blog_post_id: UUID) -> BlogPostFullPayload:
         """Returns the blog post with the given id as a value object."""
         return self._mapper(self._repository.get_by_id(blog_post_id))
