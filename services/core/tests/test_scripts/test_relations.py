@@ -9,6 +9,7 @@ from scripts.relations import RelationReport
 
 _MAIN: Final = 'server.apps.main'
 _GREETINGS: Final = 'server.apps.greetings'
+_LABEL: Final = 'main'
 
 
 def _model(registry: Apps, name: str, label: str, **fields: Any) -> type:
@@ -23,7 +24,7 @@ def _model(registry: Apps, name: str, label: str, **fields: Any) -> type:
 
 def test_reports_relation_to_another_module() -> None:
     registry = Apps([_MAIN, _GREETINGS])
-    post = _model(registry, 'Post', 'main')
+    post = _model(registry, 'Post', _LABEL)
     _model(
         registry,
         'Greeting',
@@ -38,11 +39,26 @@ def test_reports_relation_to_another_module() -> None:
 
 def test_accepts_relations_inside_a_module() -> None:
     registry = Apps([_MAIN])
-    post = _model(registry, 'Post', 'main')
+    post = _model(registry, 'Post', _LABEL)
     _model(
         registry,
         'Comment',
-        'main',
+        _LABEL,
+        post=models.ForeignKey(post, on_delete=models.CASCADE),
+    )
+
+    problems = list(RelationReport(registry).problems())
+
+    assert not problems
+
+
+def test_accepts_framework_relations_to_modules() -> None:
+    registry = Apps([_MAIN, 'django.contrib.admin'])
+    post = _model(registry, 'Post', _LABEL)
+    _model(
+        registry,
+        'Entry',
+        'admin',
         post=models.ForeignKey(post, on_delete=models.CASCADE),
     )
 
