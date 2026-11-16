@@ -64,9 +64,10 @@ class Module:
     _model: type[Model]
 
     def foreign_to(self, owner: str) -> bool:
-        """Returns true when the model lives in a module other than the owner."""
+        """Returns true when the model and the owner are two different modules."""
         name = self._model._meta.app_config.name
-        return name.startswith(_MODULES) and name != owner
+        modules = name.startswith(_MODULES) and owner.startswith(_MODULES)
+        return modules and name != owner
 
 
 if __name__ == '__main__':
