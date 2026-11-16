@@ -21,4 +21,5 @@ class PlaceOrder:
 
     def __call__(self, draft: OrderDraft) -> Order:
         """Keeps the order with the total it costs now."""
-        return self._orders.add(draft, 0)
+        price = self._prices.price_cents(draft.product)
+        return self._orders.add(draft, price * draft.quantity)
