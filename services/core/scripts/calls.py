@@ -1,11 +1,13 @@
 """Calls in Python code that reach the network."""
 
 import ast
+import re
 from collections.abc import Iterator
-from typing import Protocol, final, override
+from typing import Final, Protocol, final, override
 
 import attrs
 
+PUBLIC_PACKAGE: Final = re.compile(r'server\.apps\.(?P<module>\w+)\.public\b')
 _NETWORK_PACKAGES = frozenset(('grpc', 'requests', 'httpx', 'urllib', 'nats'))
 _GENERATED_GRPC = '_pb2_grpc'
 _ON_COMMIT = 'on_commit'
@@ -79,6 +81,36 @@ class NetworkImport(Names):
             if source.partition('.')[0] in _NETWORK_PACKAGES
             or _GENERATED_GRPC in source
         )
+
+
+@final
+@attrs.define(slots=True, frozen=True)
+class FacadeImport(Names):
+    """Names an import statement binds to the public package of another module."""
+
+    _node: ast.AST
+    _owner: str
+
+    @override
+    def names(self) -> Iterator[str]:
+        """Yields the names bound to public packages of modules but the owner."""
+        match self._node:
+            case ast.Import(names=aliases):
+                bound = [
+                    (alias.name, alias.asname or alias.name.partition('.')[0])
+                    for alias in aliases
+                ]
+            case ast.ImportFrom(module=module, names=aliases):
+                bound = [
+                    (f'{module}.{alias.name}', alias.asname or alias.name)
+                    for alias in aliases
+                ]
+            case _:
+                bound = []
+        for source, name in bound:
+            found = PUBLIC_PACKAGE.match(source)
+            if found and found['module'] != self._owner:
+                yield name
 
 
 @final
