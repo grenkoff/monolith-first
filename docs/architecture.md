@@ -1,62 +1,83 @@
 # Architecture
 
+The project is a modular monolith
+([MonolithFirst](https://martinfowler.com/bliki/MonolithFirst.html)): one
+Django service, `core`, made of modules that can each leave as a separate
+service later, step by step
+([Strangler Fig](https://martinfowler.com/bliki/StranglerFigApplication.html)).
+The rules are in "Architecture" of [`AGENTS.md`](../AGENTS.md); this page
+shows the shape.
+
+## The monolith
+
 ```
             HTTP (JSON, OpenAPI)
- client ───────────────────────────▶  core (Django)  ──────┐
-                                        │     ▲            │ PostgreSQL
-                         gRPC (proto/)  │     │ events     │
-                                        ▼     │            ▼
-                                   hello (Rust) ──▶ NATS ──▶ core-events
+ client ───────────────────────────▶ core (Django) ───▶ PostgreSQL
+                                       │
+           ┌───────────────────────────┼───────────────────────────┐
+           ▼                           ▼                           ▼
+     module billing              module catalog              module orders
+        public/ ◀──── one facade call, never a chain ────── infra/
+           └────────────── events through the outbox ──────────────┘
 ```
 
-## Services
+- **A module is a Django app** in `services/core/server/apps/<module>/`,
+  named after a business domain.
+- **Modules meet only through `public/`**: a coarse facade, immutable
+  transfer objects and events. A module calls another's facade through a
+  protocol of its own and an adapter in `infra/`; that adapter is the seam
+  where a gRPC client comes in later.
+- **Each module owns its tables**: no foreign keys, joins or transactions
+  across modules. Entities of other modules are kept by their UUIDv7 id.
+- **Facts go through the outbox**: written in the transaction of the
+  change, delivered after commit, handled idempotently.
 
-| Service | Language | Role | Ports |
-|---------|----------|------|-------|
-| `core` | Python, Django ([wemake-django-template](https://github.com/wemake-services/wemake-django-template), [django-modern-rest](https://github.com/wemake-services/django-modern-rest)) | The main service: public HTTP API, auth, admin, the main database | 8000 |
-| `core-events` | same image as `core` | Consumes events from NATS (`manage.py listen_greetings`) | — |
-| `hello` | Rust ([axum](https://github.com/tokio-rs/axum), [tonic](https://github.com/hyperium/tonic)) | Example internal service | 50051 gRPC, 8080 HTTP health |
-| `nats` | — | Message broker for domain events ([NATS](https://nats.io) with JetStream) | 4222 |
-| `db` | — | PostgreSQL owned by `core` | 5432 |
+## A module
 
-## How services talk
+```
+server/apps/<module>/
+├── public/     facade, transfer objects, events: all that other modules import
+├── api/        django-modern-rest controllers
+├── infra/      repositories, adapters to the facades of other modules
+├── models.py   its own tables, UUIDv7 primary keys
+└── logic/      value objects, protocols, use cases
+```
 
-- **Synchronous calls: gRPC.** Contracts live in `proto/<service>/v<N>/*.proto`
-  and are the single source of truth. Rust generates code at build time
-  in the `contracts` crate (`contracts/build.rs`); Python code is generated
-  by `scripts/proto.sh` and committed to `services/core/server/contracts/`.
-- **Asynchronous events: NATS.** Subjects are named `<service>.v<N>.<event>`
-  (`hello.v1.greeted`), payloads are protobuf messages from the same contracts.
-- **Only `core` is public.** Internal services are reachable only inside the
-  Docker network.
+`import-linter` keeps the layers of a module and the boundaries between
+modules (`services/core/.importlinter`).
 
-## Rules
+## When a module leaves
 
-1. Contracts first: change `proto/` before changing code. `buf` checks lint
-   and breaking changes in CI.
-2. Never change or reuse a field number. Breaking changes go to a new
-   `v<N+1>` package.
-3. Each service owns its data. No shared databases.
-4. Each service is configured only through environment variables.
-5. Every service has a health check used by Docker Compose.
+Only when a split criterion of `AGENTS.md` holds. The module becomes a Rust
+service next to the monolith:
 
-## Adding a Rust service
+```
+            HTTP (JSON, OpenAPI)
+ client ───────────────────────────▶ core (Django) ───▶ PostgreSQL of core
+                                       │     ▲
+                         gRPC (proto/) │     │ events
+                                       ▼     │
+                                 billing (Rust) ──▶ NATS ──▶ core
+                                       │
+                                       ▼
+                              PostgreSQL of billing
+```
 
-1. Copy `services/hello` to `services/<name>` and rename the crate.
-2. Add it to `members` in the root `Cargo.toml`.
-3. Add its contract to `proto/<name>/v1/<name>.proto`.
-4. Add it to `compose.yml`, the `rust` job in `.github/workflows/ci.yml`
-   already covers the whole workspace.
+- **Synchronous calls: gRPC, only from `core`.** Contracts live in
+  `proto/<service>/v<N>/*.proto`; Rust generates code at build time in the
+  `contracts` crate, Python code is generated by `make proto` into
+  `services/core/server/contracts/`.
+- **Asynchronous events: NATS.** Subjects are `<service>.v<N>.<event>`,
+  payloads are protobuf messages; a service never calls another service
+  synchronously.
+- **Only `core` is public**; a service has its own database and deploys
+  alone.
 
-Follow the layout of `services/hello/src`: `api/` (tonic endpoint, axum
-health check) → `infra/` (NATS adapter, settings) → `domain/` (names,
-greetings, their events and traits, no I/O); `main.rs` wires them.
-`eo-lint` rule EO010 keeps I/O crates, generated contracts and the outer
-layers out of `domain/`.
+Until the example is replaced, `hello` shows such a service: `core` asks it
+for a greeting over gRPC, and it publishes `hello.v1.greeted`, which
+`core-events` consumes.
 
-## Adding a Django app
-
-Follow the layout of `services/core/server/apps/greetings`:
-`logic/` (value objects, protocols, use cases) → `infra/` (adapters to other
-services, repositories) → `api/` (django-modern-rest controllers).
-`import-linter` enforces these layers (`services/core/.importlinter`).
+A service follows the layout of `services/hello/src`: `api/` (tonic
+endpoint, axum health check) → `infra/` (NATS adapter, settings) →
+`domain/` (no I/O); `main.rs` wires them. `eo-lint` rule EO010 keeps I/O
+crates, generated contracts and the outer layers out of `domain/`.

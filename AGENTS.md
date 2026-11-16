@@ -7,6 +7,10 @@ human direction. A new project starts as a copy of it
 (`gh repo create <name> --template grenkoff/polyglot-backend-template`)
 and keeps its stack, structure, rules and checks.
 
+A project starts as a modular monolith: one Django service, `core`, made of
+modules that can each become a separate service later, and only when it has
+to (see "Architecture").
+
 Roles:
 
 - **The human** owns the product: sets tasks with a sentence in the chat,
@@ -27,7 +31,8 @@ never break a rule silently.
 Read before the first change, in this order:
 
 1. this file;
-2. `docs/architecture.md`: services and how they talk;
+2. `docs/architecture.md`: the monolith, its modules and how a module
+   becomes a service;
 3. `docs/elegant-objects.md`: object design rules;
 4. `docs/tdd.md`: how code is written;
 5. `services/core/README.md` and `services/core/docs/`: the Django service
@@ -53,8 +58,8 @@ all of them, including the GitHub settings):
 |------|------------|
 | `proto/` | gRPC contracts, the single source of truth between services |
 | `contracts/` | Rust crate with the code generated from `proto/`; every Rust service depends on it |
-| `services/core/` | main Django service: public HTTP API, admin, its database |
-| `services/<name>/` | Rust services (`hello` is the example) |
+| `services/core/` | the monolith: every module, the public HTTP API, admin, its database |
+| `services/<name>/` | modules extracted into Rust services (`hello` is the example) |
 | `tools/eo-lint/` | Elegant Objects linter for Rust |
 | `scripts/` | code generation, end-to-end check, checks and agent hooks |
 | `docs/` | architecture, Elegant Objects, TDD, patterns registry, cookbook |
@@ -83,18 +88,19 @@ Changing anything in this table needs the human's approval.
 
 | Area | Choice |
 |------|--------|
-| Main service | Python 3.14, Django 6.1 from [wemake-django-template](https://github.com/wemake-services/wemake-django-template) |
+| Monolith | Python 3.14, Django 6.1 from [wemake-django-template](https://github.com/wemake-services/wemake-django-template) |
 | HTTP API | [django-modern-rest](https://github.com/wemake-services/django-modern-rest) (`dmr`) with `msgspec`; not DRF, not Django Ninja |
 | Python dependencies | Poetry (as wemake-django-template does) |
 | Python checks | ruff, [wemake-python-styleguide](https://github.com/wemake-services/wemake-python-styleguide), mypy strict, ty (second, non-blocking), import-linter |
 | Python tests | pytest, hypothesis, schemathesis + tracecov, mutmut |
-| Other services | Rust (stable), one Cargo workspace |
+| Extracted services | Rust (stable), one Cargo workspace; only for a module that leaves the monolith |
 | Rust libraries | tokio, axum (HTTP), tonic + prost (gRPC), async-nats, thiserror, tracing |
 | Rust database access | [sqlx](https://github.com/launchbadge/sqlx), see below |
 | Rust checks | rustfmt, clippy pedantic, `eo-lint`, cargo-llvm-cov, cargo-mutants |
 | Contracts | protobuf, checked by buf |
-| Messaging | NATS with JetStream |
-| Database | PostgreSQL, one database per service that needs one |
+| Events | a transactional outbox in the monolith; NATS with JetStream once a service is extracted |
+| Database | PostgreSQL: one for the monolith, one per extracted service that needs one |
+| Identifiers | UUIDv7 (`uuid.uuid7()` in Python, `uuidv7()` in PostgreSQL) |
 | Runtime | Docker Compose |
 | CI and updates | GitHub Actions, Dependabot |
 | Agent tooling | Probity (TDD hook), commitlint (Node.js, tooling only) |
@@ -113,35 +119,105 @@ Why sqlx for Rust services:
 
 ## Architecture
 
-| Service | Language | Role |
+The project follows
+[MonolithFirst](https://martinfowler.com/bliki/MonolithFirst.html): it
+starts as a modular monolith and moves a module into its own service only
+when a split criterion below is met. Splitting is cheap only when the
+monolith was built for it, so every module is kept ready to leave.
+
+| Process | Language | Role |
 |---------|----------|------|
-| `core` | Python, Django | the only public service: HTTP API, auth, admin |
-| `core-events` | same image as `core` | consumes events from NATS |
-| `<name>` | Rust | internal services; `hello` is the example |
-| `nats` | — | message broker |
+| `core` | Python, Django | the monolith: every module, the only public HTTP API, auth, admin |
 | `db` | — | PostgreSQL of `core` |
+| `<name>` | Rust | a module extracted into its own service; `hello` is the example |
+| `nats` | — | message broker, from the first extracted service on |
 
-Rules:
+Until the example is replaced, `hello`, `nats` and `core-events` (the same
+image as `core`, consuming NATS) run next to `core` as an extracted service.
 
-1. **Only `core` is public.** Internal services are reachable only inside
-   the Docker network; clients never call them directly.
-2. **Requests go over gRPC, facts go over NATS.** A caller that needs an
-   answer uses gRPC; a service that reports something that happened
-   publishes an event and does not wait for anyone.
+Modules of the monolith:
+
+1. **A module is a Django app** in `server/apps/<module>/`, named after a
+   business domain (`billing`, `catalog`), never after a technical layer
+   (`auth`, `logging`, `utils`).
+2. **Modules meet only through a public package**
+   (`server/apps/<module>/public/`): a facade, immutable transfer objects
+   and events. Nothing else of a module is imported from outside it.
+3. **Facades are coarse**: one call returns everything the caller needs. A
+   module that often reads another's data keeps its own copy, updated by
+   events.
+4. **Synchronous calls go one level deep**: the facade of a module never
+   calls the facade of a third one; longer flows go through events.
+5. **Each module owns its tables.** No foreign key, join or query reaches
+   the tables of another module; it keeps their entities by id.
+6. **A transaction stays inside one module.** A change that follows in
+   another module comes through an event, so it is consistent eventually,
+   not in the same transaction.
+7. **Facts go through events**, written to the outbox in the transaction
+   of the change and delivered after commit (see "Data integrity").
+8. **Every entity has a UUIDv7 primary key** (`uuid.uuid7()`); ids in the
+   HTTP API, events and the outbox are UUIDv7 too. They are made anywhere
+   without coordination, sort by time and stay valid when a module leaves.
+9. **`server/common` knows no domain**: technical code only, never a module
+   that others share.
+10. **One PostgreSQL by default.** Another store (a search engine, a cache,
+    ClickHouse) comes only when a module really needs it, and only that
+    module uses it.
+11. **One language in the monolith: Python.** Rust or another language
+    appears only in an extracted service.
+
+When to extract a module, only when at least one holds:
+
+- several teams (15–20 or more developers) block each other in one codebase;
+- one module needs far more resources than the rest;
+- a module needs another stack (Rust for heavy computation);
+- a module needs another reliability level or release cycle;
+- building, testing or deploying the monolith became too slow;
+- a module needs another kind of storage or puts another kind of load on it;
+- a module must be isolated for security or compliance (payment data).
+
+The opposite signal: when most tasks change several modules at once, the
+boundaries are wrong; fix them inside the monolith before splitting.
+
+A module leaves by the
+[Strangler Fig](https://martinfowler.com/bliki/StranglerFigApplication.html)
+pattern, never by a rewrite: the new service runs next to the monolith, the
+facade of the module in `core` switches to a gRPC adapter one operation at
+a time, and the old code is deleted only when nothing goes through it.
+
+Extracted services:
+
+1. **Only `core` is public.** Services are reachable only inside the Docker
+   network; clients never call them directly.
+2. **Requests go over gRPC, facts go over NATS.** Only `core` calls a
+   service and waits for the answer; a service never calls another service
+   synchronously, it reacts to events.
 3. **Each service owns its data.** No service reads or writes another
-   service's database; it asks over gRPC or listens to events.
-4. **Services are stateless.** State lives in databases and NATS streams,
+   service's database; it asks `core` over gRPC or listens to events.
+4. **Each service deploys alone.** Contracts stay backward compatible
+   (see "Contracts"); no change needs two services deployed together.
+5. **Services are stateless.** State lives in databases and NATS streams,
    so any container can be restarted or replicated.
-5. **Configuration only from environment variables** (12-factor); defaults
+
+The monolith and every service:
+
+1. **Configuration only from environment variables** (12-factor); defaults
    suit local development, secrets have no defaults.
-6. **Every service has a health check** used by Docker Compose and CI.
-7. **Logs are structured** (structlog in Python, tracing in Rust) and go to
+2. **Every process has a health check** used by Docker Compose and CI.
+3. **Logs are structured** (structlog in Python, tracing in Rust) and go to
    stdout.
+
+These rules keep out the distributed monolith: services split physically
+but still coupled by synchronous call chains, a shared database, deploys in
+lockstep, transactions across services or a split by technical layers
+instead of business domains.
 
 ## Contracts
 
-Contracts in `proto/` are the single source of truth between services.
-A change that crosses a service boundary starts with the contract.
+Inside the monolith the public package of a module is its contract. Once a
+module leaves, contracts in `proto/` are the single source of truth between
+services, and a change that crosses a service boundary starts with the
+contract.
 
 Layout and naming:
 
@@ -199,8 +275,8 @@ Layers:
 
 | Service | Layers, outer to inner | Enforced by |
 |---------|------------------------|-------------|
-| `core` (Python) | `api` → `infra` → `models` → `logic`; apps independent of each other | import-linter (`services/core/.importlinter`) |
-| Rust services | `api` (tonic, axum) → `infra` (sqlx, async-nats, gRPC clients) → `domain`; `main.rs` wires them | `eo-lint` rule EO010 |
+| `core` (Python), in each module | `api` → `infra` → `models` → `logic`; modules meet only through `public/` | import-linter (`services/core/.importlinter`) |
+| Extracted Rust services | `api` (tonic, axum) → `infra` (sqlx, async-nats) → `domain`; `main.rs` wires them | `eo-lint` rule EO010 |
 
 EO010: modules under `src/domain/` use no I/O crate (`tokio`, `tonic`,
 `axum`, `sqlx`, `async_nats`, `prost`), no generated code from `contracts`
@@ -394,14 +470,18 @@ alive through them.
 
 ## Data integrity
 
-Each database is the source of truth for its service. Other services and
-NATS are outside any transaction.
+Each database is the source of truth for its service, and each module owns
+its tables in it. Other modules, other services and NATS are outside any
+transaction.
 
-- **Atomicity**: a change that writes more than one row or table as one
-  logical unit runs in one transaction (`transaction.atomic()` in Django,
-  `pool.begin()` … `commit()` in sqlx). Never leave a half-applied state.
+- **Atomicity**: a change that writes more than one row or table of one
+  module as one logical unit runs in one transaction
+  (`transaction.atomic()` in Django, `pool.begin()` … `commit()` in sqlx).
+  Never leave a half-applied state. A transaction never writes the tables
+  of two modules.
 - **Consistency**: invariants live in the database (constraints, foreign
-  keys, `CHECK`) and in value objects; a violation fails fast.
+  keys inside a module, `CHECK`) and in value objects; a violation fails
+  fast.
 - **Isolation**: read-modify-write under possible concurrency re-reads
   the row with a lock inside the transaction
   (`select_for_update()` in Django, `SELECT … FOR UPDATE` in sqlx).
@@ -409,13 +489,14 @@ NATS are outside any transaction.
 - **No I/O inside a transaction**: gRPC calls, HTTP requests and NATS
   publishing happen before the transaction or after it commits, never
   while it holds locks.
-- **Events after commit**: publish an event only once the data it reports
-  is committed (`transaction.on_commit` in Django, after `commit()` in
-  sqlx). When losing an event is not acceptable, ask the human about a
-  transactional outbox.
-- **Idempotent consumers**: NATS JetStream may deliver an event again;
-  handling the same event twice must not change the result (check by the
-  event id in the same transaction as the write).
+- **Events through the outbox**: an event is written to the outbox table in
+  the same transaction as the data it reports, so the two are committed or
+  lost together; a relay delivers it only after commit, to the subscribers
+  in the monolith and, once a service is extracted, to NATS. A service
+  without an outbox publishes only after `commit()`.
+- **Idempotent consumers**: the outbox relay and NATS JetStream may deliver
+  an event again; handling the same event twice must not change the result
+  (check by the UUIDv7 event id in the same transaction as the write).
 
 Machine-enforced:
 
@@ -564,32 +645,48 @@ Step-by-step recipes live in `docs/cookbook.md` (`/cookbook`); in short:
    (`modify(extra_responses=...)`), routed in `api/urls.py`.
 5. schemathesis must pass for the new operation.
 
-**Add a Django app**
-1. `server/apps/<app>/` with `logic/`, `infra/`, `api/`, `models.py` as
-   needed; add it to `INSTALLED_APPS`.
+**Add a module**
+1. `server/apps/<module>/`, named after a business domain, with
+   `public/`, `logic/`, `infra/`, `api/`, `models.py` as needed; add it to
+   `INSTALLED_APPS`.
 2. Include its router in `server/urls.py`.
-3. Add the app to the layer contract in `.importlinter`.
+3. Add the module to the contracts in `.importlinter`.
 
-**Add a Rust service**
-1. Contract first: `proto/<name>/v1/<name>.proto`, compiled in
-   `contracts/build.rs` and exposed as a module in `contracts/src/lib.rs`.
+**Use another module**
+1. Call its facade from `public/` through a protocol of your module in
+   `logic/` and an adapter in `infra/`, bound in `server/implemented.py`:
+   the adapter is what becomes a gRPC client when that module leaves.
+2. Need its data often: subscribe to its events and keep a copy.
+
+**Add an event**
+1. A transfer object named as a fact in the past tense (`Greeted`) in the
+   `public/` package of the publisher, with a UUIDv7 id.
+2. The publisher writes it to the outbox in the transaction of the change;
+   the subscriber handles it idempotently (see "Data integrity").
+
+**Add a model and a migration**
+1. Django: change `models.py` with a UUIDv7 primary key, `makemigrations`,
+   one logical change per migration, backward compatible (see
+   "Migrations").
+2. Rust: `sqlx migrate add <name>`, plain SQL, same rules.
+
+**Extract a module into a service** (only when a split criterion of
+"Architecture" holds, and after the human agrees)
+1. Contract first: `proto/<name>/v1/<name>.proto` from the public package
+   of the module, compiled in `contracts/build.rs` and exposed in
+   `contracts/src/lib.rs`.
 2. `services/<name>/` with `src/domain/`, `src/infra/`, `src/api/`,
-   `src/main.rs`; add it to the workspace `members`.
-3. A `Dockerfile` like `services/hello/Dockerfile`; a service with a health
-   check in `compose.yml`.
-4. Its client in `core`: `make proto`, an adapter in `infra/`.
+   `src/main.rs`, its own database; add it to the workspace `members`, a
+   `Dockerfile` like `services/hello/Dockerfile` and a service with a
+   health check in `compose.yml`.
+3. Strangler Fig: in `core`, `make proto`, then switch the adapters behind
+   the facade to gRPC one operation at a time, events from the outbox to
+   NATS; delete the module from `core` when nothing goes through it.
 
-**Add a gRPC method or an event**
+**Add a gRPC method** (to an extracted service)
 1. Change `proto/` (an additive change, or a new version for a breaking
    one), `make proto`.
 2. Red/green on the server side, then on the client side.
-3. An event: the publisher after commit, the consumer idempotent
-   (see "Data integrity").
-
-**Add a model and a migration**
-1. Django: change `models.py`, `makemigrations`, one logical change per
-   migration, backward compatible (see "Migrations").
-2. Rust: `sqlx migrate add <name>`, plain SQL, same rules.
 
 **Fix a bug**
 1. A test that reproduces the bug (red), then the fix (green).
@@ -1001,6 +1098,11 @@ Stack and architecture:
 
 - Do not add another web framework, ORM, broker, database, package
   manager or language. Root `package.json` holds developer tooling only.
+- Do not extract a module into a service without a split criterion from
+  "Architecture" and the human's approval; do not add a language to the
+  monolith.
+- Do not reach into another module: import only its `public/` package;
+  no foreign keys, joins or transactions across modules.
 - Do not share a database between services; a service owns its schema.
 - Do not expose internal services: only `core` is public. Services talk
   through gRPC contracts and NATS events from `proto/`, never through
@@ -1062,6 +1164,8 @@ Always ask before:
 9. Doing anything outside the repository: GitHub settings, external
    services, messages to people. The settings listed in "Getting started"
    are the exception: the agent applies them itself.
+10. Extracting a module into a service (name the split criterion that
+    holds) or adding a store other than PostgreSQL.
 
 Also ask when:
 
