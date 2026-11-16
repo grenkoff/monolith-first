@@ -6,9 +6,9 @@ import msgspec
 
 from server.apps.catalog.logic.constants import (
     NAME_MAX_LENGTH,
-    NAME_PATTERN,
     PRICE_MAX_CENTS,
 )
+from server.common.text import VISIBLE_CHARACTER
 
 
 @final
@@ -20,7 +20,7 @@ class ProductDraft(msgspec.Struct, frozen=True):
         msgspec.Meta(
             min_length=1,
             max_length=NAME_MAX_LENGTH,
-            pattern=NAME_PATTERN,
+            pattern=VISIBLE_CHARACTER,
         ),
     ]
     price_cents: Annotated[int, msgspec.Meta(ge=1, le=PRICE_MAX_CENTS)]

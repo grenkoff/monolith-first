@@ -10,7 +10,7 @@ import grpc
 import pytest
 from django.conf import LazySettings
 
-from server.apps.greetings.logic.constants import UNICODE_SPACES
+from server.common.text import UNICODE_SPACES
 from server.contracts.hello.v1 import hello_pb2, hello_pb2_grpc
 
 _SLOW_ANSWER: Final = 2
