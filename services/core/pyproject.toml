@@ -438,4 +438,5 @@ ignore_names = [
   "verbose_name_plural",
   "allow_reconnect",
   "cls",
+  "constraints",
 ]
