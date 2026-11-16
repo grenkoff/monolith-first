@@ -15,6 +15,7 @@ INSTALLED_APPS: tuple[str, ...] = (
     # Your apps go here:
     'server.apps.main',
     'server.apps.greetings',
+    'server.apps.accounts',
     # Default django apps:
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -92,6 +93,8 @@ DATABASES = {
 # Default primary key field type
 # https://docs.djangoproject.com/en/6.1/ref/settings/#default-auto-field
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
+AUTH_USER_MODEL = 'accounts.User'
 
 # Internationalization
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
