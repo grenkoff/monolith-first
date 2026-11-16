@@ -68,6 +68,14 @@ def _inject_greetings(container: punq.Container) -> None:
     container.register(inject(greet.Greet))
 
 
+def _inject_catalog(container: punq.Container) -> None:
+    """Registers the objects of the catalog in the container."""
+    from server.apps.catalog.infra.products import StoredProducts
+    from server.apps.catalog.logic.usecases.add_product import AddProduct
+
+    container.register(AddProduct, instance=AddProduct(StoredProducts()))
+
+
 def populate_dependencies(container: punq.Container) -> punq.Container:
     """Populates dependencies for the container."""
     # Deps:
@@ -75,4 +83,5 @@ def populate_dependencies(container: punq.Container) -> punq.Container:
     # Apps:
     _inject_main(container)
     _inject_greetings(container)
+    _inject_catalog(container)
     return container
