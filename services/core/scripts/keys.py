@@ -2,13 +2,17 @@
 
 import os
 import sys
+import uuid
 from collections.abc import Iterator
-from typing import Protocol, final, override
+from typing import Final, Protocol, final, override
 
 import attrs
 import django
 from django.apps import apps
 from django.apps.registry import Apps
+from django.db.models import UUIDField
+
+_MODULES: Final = 'server.apps.'
 
 
 class Report(Protocol):
@@ -28,7 +32,13 @@ class KeyReport(Report):
     @override
     def problems(self) -> Iterator[str]:
         """Yields one line per model without a UUIDv7 primary key."""
-        return iter(())
+        for model in self._registry.get_models():
+            options = model._meta
+            key = options.pk
+            if not options.app_config.name.startswith(_MODULES):
+                continue
+            if not isinstance(key, UUIDField) or key.default is not uuid.uuid7:
+                yield f'{options.label} has no UUIDv7 primary key'
 
 
 if __name__ == '__main__':
