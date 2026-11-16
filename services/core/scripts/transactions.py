@@ -8,9 +8,11 @@ from typing import Protocol, final, override
 
 import attrs
 
-from scripts.calls import CallRoot, EagerCalls, NetworkImport
+from scripts.calls import CallRoot, EagerCalls, FacadeImport, NetworkImport
 
 _PROBLEM = 'network call inside a transaction'
+_FACADE_PROBLEM = 'another module called inside a transaction'
+_MODULES = 'apps'
 _ATOMIC = frozenset(('atomic', 'transaction.atomic'))
 
 
@@ -83,24 +85,41 @@ class AtomicBlock(Block):
 @final
 @attrs.define(slots=True, frozen=True)
 class TransactionReport(Report):
-    """Network calls inside the transactions of one Python module."""
+    """Network and other module calls inside the transactions of one module."""
 
     _path: Path
     _text: str
 
     @override
     def problems(self) -> Iterator[str]:
-        """Yields one line per network call inside a transaction."""
+        """Yields one line per forbidden call inside a transaction."""
         module = ast.parse(self._text)
+        parts = self._path.parts
+        owner = parts[1] if parts[0] == _MODULES else ''
         network = frozenset(
             name for node in ast.walk(module) for name in NetworkImport(node).names()
         )
+        facades = frozenset(
+            name
+            for node in ast.walk(module)
+            for name in FacadeImport(node, owner).names()
+        )
+        yield from self._calls(module, network, _PROBLEM)
+        yield from self._calls(module, facades, _FACADE_PROBLEM)
+
+    def _calls(
+        self,
+        module: ast.Module,
+        names: frozenset[str],
+        problem: str,
+    ) -> Iterator[str]:
+        """Yields a problem per call that starts from one of the names."""
         for node in ast.walk(module):
             for statement in AtomicBlock(node).statements():
                 yield from (
-                    f'{self._path}:{call.lineno}: {_PROBLEM}'
+                    f'{self._path}:{call.lineno}: {problem}'
                     for call in EagerCalls(statement).calls()
-                    if CallRoot(call).reaches(network)
+                    if CallRoot(call).reaches(names)
                 )
 
 
