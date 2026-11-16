@@ -32,7 +32,7 @@ def test_product_read_by_id(
 
 
 @pytest.mark.django_db
-def test_unknown_product_is_404(dmr_client: DMRClient) -> None:
+def test_unknown_product_is_not_found(dmr_client: DMRClient) -> None:
     response = dmr_client.get(
         reverse('api:v1:catalog:product_get', kwargs={'id': uuid.uuid7()}),
     )
