@@ -1,43 +1,6 @@
 """Composition root: binds every protocol to its implementation."""
 
-# NOTE: simple layers go on top!
-
-from collections.abc import Callable
-from typing import Any
-
 import punq
-
-
-def _global_namespace() -> dict[str, Any]:
-    """Returns the names that annotations of injected objects refer to."""
-    from django.conf import LazySettings  # noqa: F401
-    from django.core.cache import BaseCache  # noqa: F401
-
-    return locals()  # noqa: WPS421
-
-
-def _create_injector[Thing](
-    container: punq.Container,
-    localns: dict[str, Any],
-) -> Callable[[Thing], Thing]:
-    # We need to provide the same string names as we do in the definition.
-    """Makes the container resolve annotations with the given names."""
-    localns.pop('container')
-    localns.update(_global_namespace())
-    container.registrations._localns.update(localns)  # noqa: SLF001
-    return lambda service: service
-
-
-def _inject_django(container: punq.Container) -> None:
-    """Registers Django objects in the container."""
-    from django.conf import LazySettings, settings
-
-    # Django:
-    container.register(
-        LazySettings,
-        instance=settings,
-        scope=punq.Scope.singleton,
-    )
 
 
 def _inject_main(container: punq.Container) -> None:
@@ -45,27 +8,29 @@ def _inject_main(container: punq.Container) -> None:
     from server.apps.main.infra import mappers, repository
     from server.apps.main.logic.usecases import blogpost_create, blogpost_get
 
-    # Hacks to resolve annotations:
-    inject = _create_injector(container, locals())  # noqa: WPS421
-
-    # Things to register:
-    container.register(repository.BlogPostRepo)
-    container.register(mappers.BlogPostMapper)
-
-    container.register(inject(blogpost_create.CreateBlogPost))
-    container.register(inject(blogpost_get.GetBlogPost))
+    stored = repository.BlogPostRepo()
+    mapper = mappers.BlogPostMapper()
+    container.register(
+        blogpost_create.CreateBlogPost,
+        instance=blogpost_create.CreateBlogPost(stored, mapper),
+    )
+    container.register(
+        blogpost_get.GetBlogPost,
+        instance=blogpost_get.GetBlogPost(stored, mapper),
+    )
 
 
 def _inject_greetings(container: punq.Container) -> None:
     """Registers the objects of the greetings app in the container."""
+    from django.conf import settings
+
     from server.apps.greetings.infra import remote
-    from server.apps.greetings.logic.greetings import Greetings
     from server.apps.greetings.logic.usecases import greet
 
-    inject = _create_injector(container, locals())  # noqa: WPS421
-
-    container.register(Greetings, remote.RemoteGreetings)
-    container.register(inject(greet.Greet))
+    container.register(
+        greet.Greet,
+        instance=greet.Greet(remote.RemoteGreetings(settings)),
+    )
 
 
 def _inject_catalog(container: punq.Container) -> None:
@@ -85,10 +50,7 @@ def _inject_catalog(container: punq.Container) -> None:
 
 
 def populate_dependencies(container: punq.Container) -> punq.Container:
-    """Populates dependencies for the container."""
-    # Deps:
-    _inject_django(container)
-    # Apps:
+    """Registers the objects of every module in the container."""
     _inject_main(container)
     _inject_greetings(container)
     _inject_catalog(container)
