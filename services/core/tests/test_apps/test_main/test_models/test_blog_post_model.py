@@ -1,11 +1,17 @@
 """Tests of the blog post model."""
 
 from typing import final
+from uuid import UUID
 
 from hypothesis import given
 from hypothesis.extra import django
 
 from server.apps.main.models import BlogPost
+
+
+def _version(identifier: object) -> int | None:
+    """Returns the UUID version of an identifier, or nothing for anything else."""
+    return identifier.version if isinstance(identifier, UUID) else None
 
 
 @final
@@ -17,5 +23,5 @@ class TestBlogPost(django.TestCase):
         """Tests that instance can be saved and has correct representation."""
         instance.save()
 
-        assert instance.id > 0
+        assert _version(instance.pk) == 7
         assert len(str(instance)) <= 20

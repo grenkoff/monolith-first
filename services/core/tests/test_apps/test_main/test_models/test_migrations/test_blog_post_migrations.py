@@ -1,5 +1,7 @@
 """Tests of the blog post migrations."""
 
+from uuid import UUID
+
 import pytest
 from django_test_migrations.migrator import Migrator
 
@@ -17,3 +19,14 @@ def test_initial0001(migrator: Migrator) -> None:
     model = new_state.apps.get_model(app_name, 'BlogPost')
 
     assert model.objects.create(title='test', body='some body')
+
+
+def test_blog_post_ids_become_uuid7(migrator: Migrator) -> None:
+    migrator.apply_initial_migration((app_name, '0001_initial'))
+
+    new_state = migrator.apply_tested_migration((app_name, '0002_uuid_primary_key'))
+    model = new_state.apps.get_model(app_name, 'BlogPost')
+    post = model.objects.create(title='test', body='some body')
+
+    assert isinstance(post.pk, UUID)
+    assert post.pk.version == 7
