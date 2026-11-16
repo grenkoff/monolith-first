@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use syn::visit::Visit;
 use walkdir::WalkDir;
 
+use crate::clients::Clients;
 use crate::code::{Code, Rust};
 use crate::finding::Finding;
 use crate::inspection::Inspection;
@@ -68,6 +69,14 @@ impl Linted for Rust {
         let mut transactions = Transactions::new(file);
         transactions.visit_file(&tree);
         findings.extend(Vec::from(transactions));
+        if !Path::new(file)
+            .ancestors()
+            .any(|folder| folder.ends_with("tests"))
+        {
+            let mut clients = Clients::new(file);
+            clients.visit_file(&tree);
+            findings.extend(Vec::from(clients));
+        }
         Ok(findings)
     }
 }
