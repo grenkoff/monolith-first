@@ -49,9 +49,25 @@ def _inject_catalog(container: punq.Container) -> None:
     )
 
 
+def _inject_orders(container: punq.Container) -> None:
+    """Registers the objects of orders, with the catalog behind its facade."""
+    from server.apps.catalog.infra import products
+    from server.apps.orders.infra import catalog, orders
+    from server.apps.orders.logic.usecases import place_order
+
+    container.register(
+        place_order.PlaceOrder,
+        instance=place_order.PlaceOrder(
+            catalog.CatalogPrices(products.StoredProducts()),
+            orders.StoredOrders(),
+        ),
+    )
+
+
 def populate_dependencies(container: punq.Container) -> punq.Container:
     """Registers the objects of every module in the container."""
     _inject_main(container)
     _inject_greetings(container)
     _inject_catalog(container)
+    _inject_orders(container)
     return container
