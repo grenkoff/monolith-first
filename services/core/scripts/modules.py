@@ -10,6 +10,17 @@ from typing import Final, Protocol, final, override
 import attrs
 
 _PUBLIC: Final = re.compile(r'server\.apps\.(?P<module>\w+)\.public\b')
+_TECHNICAL: Final = frozenset((
+    'api',
+    'auth',
+    'common',
+    'core',
+    'helpers',
+    'infra',
+    'logging',
+    'shared',
+    'utils',
+))
 
 
 class Report(Protocol):
@@ -91,6 +102,20 @@ class ChainReport(Report):
 
 @final
 @attrs.define(slots=True, frozen=True)
+class NameReport(Report):
+    """Name of a module that says what layer it is instead of what domain."""
+
+    _name: str
+
+    @override
+    def problems(self) -> Iterator[str]:
+        """Yields a line when the name belongs to a technical layer."""
+        if self._name in _TECHNICAL:
+            yield f'{self._name} is named after a technical layer, not a domain'
+
+
+@final
+@attrs.define(slots=True, frozen=True)
 class ModuleTree(Report):
     """Boundary problems of the modules under a directory."""
 
@@ -106,6 +131,7 @@ class ModuleTree(Report):
         }
         for caller in calls:
             yield from ChainReport(caller, calls).problems()
+            yield from NameReport(caller).problems()
 
 
 if __name__ == '__main__':
