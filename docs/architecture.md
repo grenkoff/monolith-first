@@ -49,6 +49,11 @@ so it maps one to one onto `proto/` when the module leaves. Only `infra/`
 of another module imports it. `import-linter` checks both rules
 (`services/core/.importlinter`).
 
+`make architecture`, a CI job of its own, keeps out the distributed
+monolith: no chains or cycles of synchronous calls between modules, no
+module named after a technical layer, no relations or transactions across
+modules, only `core` facing the world and one database per deployable.
+
 ## When a module leaves
 
 Only when a split criterion of `AGENTS.md` holds. The module becomes a Rust
