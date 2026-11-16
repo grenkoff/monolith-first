@@ -16,6 +16,7 @@ help:
 	  'make proto         buf lint and format, regenerate Python gRPC code from proto/' \
 	  'make patterns      regenerate docs/patterns.md from the code' \
 	  'make contracts     proto, patterns, buf breaking against develop, no diff' \
+	  'make architecture  module boundaries and services: no distributed monolith' \
 	  'make rust          fmt, clippy, tests, coverage (80%, 100% in domain), eo-lint, cargo-deny' \
 	  'make core          wemake-django-template CI for core in Docker' \
 	  'make ty            second type checker for core (non-blocking)' \
@@ -59,6 +60,12 @@ contracts: proto patterns
 	buf breaking --against "$$(git rev-parse --path-format=absolute --git-common-dir)#ref=origin/develop"
 	git add --intent-to-add $(GENERATED)
 	git diff --exit-code -- $(GENERATED)
+
+.PHONY: architecture
+architecture: env
+	cd $(CORE) && $(COMPOSE) build web
+	$(COMPOSE) config --format json | \
+	  (cd $(CORE) && $(COMPOSE) run --rm --no-deps -T web ./docker/django/architecture.sh)
 
 .PHONY: patterns
 patterns:
@@ -136,5 +143,5 @@ release-notes:
 	@npx --no-install git-cliff --latest --strip header
 
 .PHONY: check
-check: commitlint security contracts duplicates rust core mutants e2e
+check: commitlint security contracts architecture duplicates rust core mutants e2e
 	$(MAKE) down
