@@ -1,17 +1,19 @@
 # polyglot-backend-template
 
-A starting point for backend projects built by AI agents and humans:
-microservices with a **Django** main service and **Rust** services around it,
-written in [Elegant Objects](https://www.elegantobjects.org/) style and
-checked by strict CI.
+A starting point for backend projects built by AI agents and humans: a
+**Django** modular monolith that moves a module into a **Rust** service
+only when it has to, written in
+[Elegant Objects](https://www.elegantobjects.org/) style and checked by
+strict CI.
 
 | | |
 |---|---|
-| Main service | Django from [wemake-django-template](https://github.com/wemake-services/wemake-django-template), API on [django-modern-rest](https://github.com/wemake-services/django-modern-rest) |
+| Architecture | modular monolith first ([MonolithFirst](https://martinfowler.com/bliki/MonolithFirst.html)), modules leave as services step by step ([Strangler Fig](https://martinfowler.com/bliki/StranglerFigApplication.html)), see [docs/architecture.md](docs/architecture.md) |
+| Monolith | Django from [wemake-django-template](https://github.com/wemake-services/wemake-django-template), API on [django-modern-rest](https://github.com/wemake-services/django-modern-rest), UUIDv7 identifiers |
 | Python style | [wemake-python-styleguide](https://github.com/wemake-services/wemake-python-styleguide), ruff, mypy strict, coverage (100% of domain logic), schemathesis |
-| Other services | Rust: [axum](https://github.com/tokio-rs/axum), [tonic](https://github.com/hyperium/tonic), [async-nats](https://github.com/nats-io/nats.rs) |
+| Extracted services | Rust: [axum](https://github.com/tokio-rs/axum), [tonic](https://github.com/hyperium/tonic), [async-nats](https://github.com/nats-io/nats.rs) |
 | Rust style | Elegant Objects on 100%: clippy pedantic + [`eo-lint`](tools/eo-lint) |
-| Communication | gRPC contracts in [`proto/`](proto) ([buf](https://buf.build)), events over [NATS](https://nats.io) |
+| Communication | between modules: facades and an outbox of events; between services: gRPC contracts in [`proto/`](proto) ([buf](https://buf.build)) and events over [NATS](https://nats.io) |
 | Runtime | Docker Compose, PostgreSQL |
 
 ## Start a new project
