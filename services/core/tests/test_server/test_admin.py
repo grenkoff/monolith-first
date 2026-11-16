@@ -29,8 +29,8 @@ _MODEL_ADMIN_PARAMS = tuple(
 
 def _make_url(site: AdminSite, model: type[Model], page: str) -> str:
     """Generates a URL for the given admin site, model, and page."""
-    app_label = model._meta.app_label  # noqa: SLF001
-    model_name = model._meta.model_name  # noqa: SLF001
+    app_label = model._meta.app_label
+    model_name = model._meta.model_name
     return reverse(f'{site.name}:{app_label}_{model_name}_{page}')  # noqa: WPS221
 
 

@@ -175,6 +175,7 @@ external = ["WPS"]
 
 # Plugin configs:
 flake8-quotes.inline-quotes = "single"
+flake8-self.extend-ignore-names = ["_meta"]
 mccabe.max-complexity = 6
 pydocstyle.convention = "google"
 
