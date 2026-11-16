@@ -8,7 +8,8 @@ from typing import Protocol, final, override
 
 import attrs
 
-from scripts.calls import CallRoot, EagerCalls, FacadeImport, NetworkImport
+from scripts.calls import CallRoot, EagerCalls
+from scripts.imports import FacadeImport, NetworkImport
 
 _PROBLEM = 'network call inside a transaction'
 _FACADE_PROBLEM = 'another module called inside a transaction'
