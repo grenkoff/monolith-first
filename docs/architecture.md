@@ -36,15 +36,18 @@ shows the shape.
 
 ```
 server/apps/<module>/
-├── public/     facade, transfer objects, events: all that other modules import
 ├── api/        django-modern-rest controllers
 ├── infra/      repositories, adapters to the facades of other modules
 ├── models.py   its own tables, UUIDv7 primary keys
-└── logic/      value objects, protocols, use cases
+├── logic/      value objects, protocols, use cases, the facade implementation
+└── public/     facade protocol, transfer objects, events: all that other modules import
 ```
 
-`import-linter` keeps the layers of a module and the boundaries between
-modules (`services/core/.importlinter`).
+Layers go from the outer to the inner one, and each imports only the ones
+below it. `public/` is the innermost: it imports nothing else of its module,
+so it maps one to one onto `proto/` when the module leaves. Only `infra/`
+of another module imports it. `import-linter` checks both rules
+(`services/core/.importlinter`).
 
 ## When a module leaves
 

@@ -141,8 +141,9 @@ Modules of the monolith:
    business domain (`billing`, `catalog`), never after a technical layer
    (`auth`, `logging`, `utils`).
 2. **Modules meet only through a public package**
-   (`server/apps/<module>/public/`): a facade, immutable transfer objects
-   and events. Nothing else of a module is imported from outside it.
+   (`server/apps/<module>/public/`): the facade as a protocol, immutable
+   transfer objects and events. Only the `infra/` of another module imports
+   it; nothing else of a module is imported from outside it.
 3. **Facades are coarse**: one call returns everything the caller needs. A
    module that often reads another's data keeps its own copy, updated by
    events.
@@ -275,8 +276,13 @@ Layers:
 
 | Service | Layers, outer to inner | Enforced by |
 |---------|------------------------|-------------|
-| `core` (Python), in each module | `api` → `infra` → `models` → `logic`; modules meet only through `public/` | import-linter (`services/core/.importlinter`) |
+| `core` (Python), in each module | `api` → `infra` → `models` → `logic` → `public`; only `infra` imports the `public` of another module | import-linter (`services/core/.importlinter`) |
 | Extracted Rust services | `api` (tonic, axum) → `infra` (sqlx, async-nats) → `domain`; `main.rs` wires them | `eo-lint` rule EO010 |
+
+`public` is the innermost layer of a module: it imports nothing else of its
+module, so it maps one to one onto `proto/` when the module leaves. The
+module implements its facade in `logic/` or `infra/` and binds it in
+`server/implemented.py`.
 
 EO010: modules under `src/domain/` use no I/O crate (`tokio`, `tonic`,
 `axum`, `sqlx`, `async_nats`, `prost`), no generated code from `contracts`
@@ -650,7 +656,8 @@ Step-by-step recipes live in `docs/cookbook.md` (`/cookbook`); in short:
    `public/`, `logic/`, `infra/`, `api/`, `models.py` as needed; add it to
    `INSTALLED_APPS`.
 2. Include its router in `server/urls.py`.
-3. Add the module to the contracts in `.importlinter`.
+3. Nothing to add to `.importlinter`: its contracts cover every module
+   through `server.apps.*`.
 
 **Use another module**
 1. Call its facade from `public/` through a protocol of your module in

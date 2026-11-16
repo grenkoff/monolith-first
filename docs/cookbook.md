@@ -51,13 +51,14 @@ Example: `POST /api/v1/greetings/` in `server/apps/greetings/`.
 
 1. `server/apps/<app>/` with `__init__.py`, and only the layers it needs:
    `logic/` (value objects, protocols, use cases), `infra/`, `api/`,
-   `models.py`, `admin.py`.
+   `models.py`, `admin.py`, and `public/` once another module needs it.
 2. Add `'server.apps.<app>'` to `INSTALLED_APPS` in
    `server/settings/components/common.py`.
 3. Include its router in `server/urls.py`.
-4. The layer contract in `services/core/.importlinter` covers every app
-   through `server.apps.*`; `lint-imports` (in `make core`) proves the new
-   app imports downwards only and nothing from other apps.
+4. The contracts in `services/core/.importlinter` cover every app through
+   `server.apps.*`; `lint-imports` (in `make core`) proves the new app
+   imports downwards only, and from other apps only their `public/`, from
+   its `infra/`.
 5. Tests mirror the app in `tests/test_apps/test_<app>/`.
 
 ## Add a Rust service
