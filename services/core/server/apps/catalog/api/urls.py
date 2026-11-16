@@ -8,5 +8,10 @@ router = Router(
     'catalog/',
     [
         path('products/', views.ProductCreate.as_view(), name='product_create'),
+        path(
+            'products/<uuid:id>/',
+            views.ProductGet.as_view(),
+            name='product_get',
+        ),
     ],
 )

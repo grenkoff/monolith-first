@@ -21,3 +21,15 @@ class ProductCreate(
     def post(self, parsed_body: Body[ProductDraft]) -> Product:
         """Creates a product from the request body."""
         return self.resolve(add_product.AddProduct)(parsed_body)
+
+
+@final
+class ProductGet(
+    HasContainer,
+    Controller[StrictMsgspecSerializer],
+):
+    """Shows products on sale over HTTP."""
+
+    def get(self) -> Product:
+        """Returns the product with the id from the path."""
+        return Product(id=self.kwargs['id'], name='', price_cents=0)
