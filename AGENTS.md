@@ -147,8 +147,9 @@ Modules of the monolith:
 3. **Facades are coarse**: one call returns everything the caller needs. A
    module that often reads another's data keeps its own copy, updated by
    events.
-4. **Synchronous calls go one level deep**: the facade of a module never
-   calls the facade of a third one; longer flows go through events.
+4. **Synchronous calls go one level deep**: a module that other modules
+   call never calls a third one synchronously; longer flows go through
+   events.
 5. **Each module owns its tables.** No foreign key, join or query reaches
    the tables of another module; it keeps their entities by id.
 6. **A transaction stays inside one module.** A change that follows in
@@ -212,6 +213,25 @@ These rules keep out the distributed monolith: services split physically
 but still coupled by synchronous call chains, a shared database, deploys in
 lockstep, transactions across services or a split by technical layers
 instead of business domains.
+
+Machine-enforced by `make architecture`, a CI job of its own:
+
+- import-linter: the layers of a module; only `infra` imports the
+  `public` package of another module;
+- `scripts/modules.py`: no chain or cycle of synchronous calls between
+  modules; no module named after a technical layer (`api`, `auth`,
+  `common`, `core`, `helpers`, `infra`, `logging`, `shared`, `utils`);
+- `scripts/relations.py`: no foreign key, one-to-one or many-to-many
+  relation between models of two modules;
+- `scripts/transactions.py`: no call to another module inside a
+  transaction;
+- `scripts/compose.py`: only `core` publishes ports; a database serves one
+  deployable (services that run the same image count as one).
+
+Two more checks run with the code they guard: `eo-lint` rule EO012
+(`make rust`) rejects generated gRPC clients in service code outside
+`tests/`, and `buf breaking` (`make contracts`) keeps contracts backward
+compatible, so a service deploys alone.
 
 ## Contracts
 
@@ -507,9 +527,9 @@ transaction.
 Machine-enforced:
 
 - Python: `services/core/scripts/transactions.py` (in `make check` and CI)
-  rejects gRPC, HTTP and NATS calls inside `transaction.atomic()` and
-  functions decorated with it; code passed to `transaction.on_commit` is
-  allowed;
+  rejects gRPC, HTTP and NATS calls and calls to the `public` package of
+  another module inside `transaction.atomic()` and functions decorated
+  with it; code passed to `transaction.on_commit` is allowed;
 - Rust: `eo-lint` rule EO011 rejects an `.await` on anything but the
   transaction itself between `begin()` and `commit()`.
 
@@ -984,6 +1004,7 @@ a pull request merges only with every required job green.
 | commits | commit messages and the pull request title (commitlint) |
 | secrets | gitleaks over the changes and the history |
 | contracts | `make contracts`: `buf lint`, `buf format`, `buf breaking`; generated code and `docs/patterns.md` up to date |
+| architecture | `make architecture`: import-linter, calls and names of modules, relations between modules, calls to other modules inside transactions, ports and databases in Compose |
 | rust | rustfmt, clippy, tests, coverage (80% overall, 100% in `domain/`), `eo-lint`, cargo-machete, cargo-deny |
 | rust-mutants | cargo-mutants: zero survivors |
 | core | the wemake-django-template pipeline (ruff, wemake-python-styleguide, mypy, import-linter, pytest, schemathesis, Django checks, migration linters, deptry), pip-audit, vulture, transaction check, coverage (80% overall, 100% in `logic/`), mutmut |
@@ -1082,6 +1103,7 @@ so local runs match CI.
 | `make proto` | checks the contracts with `buf` and regenerates the Python code |
 | `make patterns` | regenerates `docs/patterns.md` |
 | `make contracts` | `make proto` and `make patterns`, `buf breaking` against `develop`, fails when generated code or `docs/patterns.md` differ from the commit |
+| `make architecture` | checks that no distributed monolith appears (see "Architecture") |
 | `make rust` | rustfmt, clippy, tests, coverage, `eo-lint`, cargo-machete, cargo-deny |
 | `make core` | the wemake-django-template pipeline for `core` inside Docker |
 | `make ty` | ty for `core` (non-blocking) |
