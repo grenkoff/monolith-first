@@ -20,18 +20,23 @@ layers =
   (infra)
   (models)
   (logic)
+  (public)
 
 
 [importlinter:contract:apps-independence]
-name = All apps must be independent
+name = Modules meet only through the infra of one and the public package of another
 type = independence
 
 modules =
   server.apps.*
 
 ignore_imports =
-  # This is hack we have to use due to models relations
-  server.apps.*.admin -> server.apps.*.models
+  server.apps.*.infra -> server.apps.*.public
+  server.apps.*.infra -> server.apps.*.public.**
+  server.apps.*.infra.** -> server.apps.*.public
+  server.apps.*.infra.** -> server.apps.*.public.**
+
+unmatched_ignore_imports_alerting = none
 
 
 [importlinter:contract:common-module-is-independent]
