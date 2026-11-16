@@ -1,8 +1,12 @@
 """Tests of the report of modules that break the boundaries between modules."""
 
 from pathlib import Path
+from typing import Final
 
 from scripts.modules import ModuleTree
+
+_BILLING: Final = 'billing'
+_CATALOG: Final = 'catalog'
 
 
 def _module(root: Path, name: str, *callees: str) -> None:
@@ -17,10 +21,31 @@ def _module(root: Path, name: str, *callees: str) -> None:
 
 
 def test_reports_call_chain_between_modules(tmp_path: Path) -> None:
-    _module(tmp_path, 'billing', 'catalog')
-    _module(tmp_path, 'catalog', 'pricing')
+    _module(tmp_path, _BILLING, _CATALOG)
+    _module(tmp_path, _CATALOG, 'pricing')
     _module(tmp_path, 'pricing')
 
     problems = list(ModuleTree(tmp_path).problems())
 
     assert problems == ['billing calls catalog, which calls pricing']
+
+
+def test_reports_cycle_between_modules(tmp_path: Path) -> None:
+    _module(tmp_path, _BILLING, _CATALOG)
+    _module(tmp_path, _CATALOG, _BILLING)
+
+    problems = list(ModuleTree(tmp_path).problems())
+
+    assert problems == [
+        'billing calls catalog, which calls billing',
+        'catalog calls billing, which calls catalog',
+    ]
+
+
+def test_reports_technical_module_names(tmp_path: Path) -> None:
+    _module(tmp_path, _BILLING)
+    _module(tmp_path, 'utils')
+
+    problems = list(ModuleTree(tmp_path).problems())
+
+    assert problems == ['utils is named after a technical layer, not a domain']
