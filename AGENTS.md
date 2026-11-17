@@ -50,7 +50,8 @@ all of them, including the GitHub settings):
 4. `make env`, then `make check`: everything must be green before the first
    task.
 5. Replace the project name and description in `README.md`; keep the
-   example (`hello`, `greetings`) until the first real service exists.
+   example (`catalog` and `orders`, `hello` and `greetings`) until the
+   first real module exists.
 
 ## Repository map
 
@@ -722,9 +723,9 @@ Step-by-step recipes live in `docs/cookbook.md` (`/cookbook`); in short:
 **Fix a bug**
 1. A test that reproduces the bug (red), then the fix (green).
 
-**Remove the example** (`hello`, `greetings`), once the first real service
-exists, in its own pull request: services, contracts, generated code,
-tests, Compose entries, `docs/patterns.md`.
+**Remove the example** (`catalog`, `orders`, `hello`, `greetings`), once
+the first real module exists, in its own pull request: modules, services,
+contracts, generated code, tests, Compose entries, `docs/patterns.md`.
 
 ## Migrations
 

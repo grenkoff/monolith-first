@@ -32,6 +32,12 @@ shows the shape.
 - **Facts go through the outbox**: written in the transaction of the
   change, delivered after commit, handled idempotently.
 
+Until the example is replaced, `catalog` and `orders` show two modules:
+`orders` asks the `Catalog` facade of `catalog/public/` for the price of a
+product through its own protocol `Prices` and the adapter `CatalogPrices`
+in its `infra/`, keeps the product by its id and stores the total it was
+sold at.
+
 ## A module
 
 ```

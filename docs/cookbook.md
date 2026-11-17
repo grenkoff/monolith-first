@@ -1,8 +1,9 @@
 # Cookbook
 
 Step-by-step recipes for the typical tasks of `AGENTS.md`. The example
-service `hello` and the example app `greetings` show every step in real
-code; copy their shape, not their names.
+modules `catalog` and `orders`, the example service `hello` and the
+example app `greetings` show every step in real code; copy their shape,
+not their names.
 
 Every recipe starts and ends the same way:
 
@@ -35,9 +36,9 @@ Example: `POST /api/v1/greetings/` in `server/apps/greetings/`.
    (`GreetingsUnavailableError`).
 4. Implementations of the protocols in `infra/` (`remote.RemoteGreetings`),
    with every network call bounded by a timeout from settings.
-5. Bind them in `server/implemented.py`, in the function of the app:
-   `container.register(Greetings, remote.RemoteGreetings)` and
-   `container.register(inject(greet.Greet))`.
+5. Build and bind them by hand in `server/implemented.py`, in the function
+   of the app:
+   `container.register(greet.Greet, instance=greet.Greet(remote.RemoteGreetings(settings)))`.
 6. A `dmr` controller in `api/views.py`: `HasContainer` and
    `Controller[StrictMsgspecSerializer]`, the handler resolves the use case,
    `@modify(extra_responses=[...])` declares every error status, and
@@ -60,6 +61,27 @@ Example: `POST /api/v1/greetings/` in `server/apps/greetings/`.
    imports downwards only, and from other apps only their `public/`, from
    its `infra/`.
 5. Tests mirror the app in `tests/test_apps/test_<app>/`.
+
+## Use another module
+
+Example: `orders` prices an order with the `Catalog` facade of `catalog`.
+
+1. The called module exposes a coarse facade in `public/`: a protocol, the
+   transfer objects it returns and the errors it raises
+   (`catalog.public.products`: `Catalog`, `Product`, `UnknownProductError`).
+   Its `infra/` or `logic/` implements it (`StoredProducts`).
+2. The caller declares what it needs as its own protocol in `logic/`, in
+   its own words, with its own errors (`Prices`, `ProductNotOnSaleError`);
+   its use cases depend only on that (`PlaceOrder`), and a fake proves them.
+3. An adapter in the `infra/` of the caller implements the protocol with
+   the facade and translates its errors (`CatalogPrices`); it is the only
+   place that imports the `public/` of the other module, and the one that
+   becomes a gRPC client when that module leaves.
+4. Keep the other module's entities by id (`Order.product` is a
+   `UUIDField`, never a foreign key), and copy what must not change later
+   (the total an order was sold at).
+5. Wire the adapter with the facade in `server/implemented.py`
+   (`_inject_orders`).
 
 ## Add a Rust service
 
@@ -159,16 +181,20 @@ Rust (sqlx):
 
 ## Remove the example
 
-Once the first real service exists, in its own pull request:
+Once the first real module exists, in its own pull request:
 
-1. `services/hello/`, `proto/hello/`, its lines in `contracts/build.rs`
+1. `services/core/server/apps/catalog/` and `server/apps/orders/`, their
+   lines in `INSTALLED_APPS`, their routers in `server/urls.py`,
+   `_inject_catalog` and `_inject_orders` in `server/implemented.py`, their
+   tests in `tests/test_apps/test_catalog/` and `tests/test_apps/test_orders/`.
+2. `services/hello/`, `proto/hello/`, its lines in `contracts/build.rs`
    and `contracts/src/lib.rs`, its member in `Cargo.toml`.
-2. `services/core/server/apps/greetings/`, its line in `INSTALLED_APPS`,
+3. `services/core/server/apps/greetings/`, its line in `INSTALLED_APPS`,
    its router in `server/urls.py`, `_inject_greetings` in
    `server/implemented.py`, its settings (`HELLO_GRPC_*`) in
    `server/settings/components/services.py` and `config/.env.template`.
-3. Its tests: `tests/test_apps/test_greetings/`, `tests/plugins/greetings/`.
-4. `hello` and `core-events` in `compose.yml`, the `HELLO_GRPC_ADDR` of
+4. Its tests: `tests/test_apps/test_greetings/`, `tests/plugins/greetings/`.
+5. `hello` and `core-events` in `compose.yml`, the `HELLO_GRPC_ADDR` of
    `core`, and the request of `scripts/e2e.sh` (point it at the new
    service).
-5. `make proto`, `make patterns`, `make check`.
+6. `make proto`, `make patterns`, `make check`.
