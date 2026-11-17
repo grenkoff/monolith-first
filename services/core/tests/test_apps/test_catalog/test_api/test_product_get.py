@@ -6,6 +6,8 @@ from http import HTTPStatus
 import pytest
 from django.urls import reverse
 from dmr.test import DMRClient
+from inline_snapshot import snapshot
+from inline_snapshot_django import snapshot_queries
 
 
 @pytest.fixture
@@ -23,12 +25,14 @@ def test_product_read_by_id(
     dmr_client: DMRClient,
     product: dict[str, object],
 ) -> None:
-    response = dmr_client.get(
-        reverse('api:v1:catalog:product_get', kwargs={'id': product['id']}),
-    )
+    with snapshot_queries() as queries:
+        response = dmr_client.get(
+            reverse('api:v1:catalog:product_get', kwargs={'id': product['id']}),
+        )
 
     assert response.status_code == HTTPStatus.OK
     assert response.json() == product
+    assert queries == snapshot(['SELECT ... FROM catalog_product WHERE ... LIMIT ...'])
 
 
 @pytest.mark.django_db
