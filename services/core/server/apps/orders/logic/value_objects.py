@@ -1,9 +1,11 @@
 """Value objects of orders."""
 
-from typing import final
+from typing import Annotated, final
 from uuid import UUID
 
 import msgspec
+
+from server.apps.orders.logic.constants import QUANTITY_MAX
 
 
 @final
@@ -11,7 +13,7 @@ class OrderDraft(msgspec.Struct, frozen=True):
     """Order to place: a product and how many of it."""
 
     product: UUID
-    quantity: int
+    quantity: Annotated[int, msgspec.Meta(ge=1, le=QUANTITY_MAX)]
 
 
 @final
