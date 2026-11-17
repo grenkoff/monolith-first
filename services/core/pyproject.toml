@@ -180,7 +180,7 @@ mccabe.max-complexity = 6
 pydocstyle.convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-"server/apps/*/migrations/*.py" = ["D100", "D101", "E501", "RUF012"]
+"server/**/migrations/*.py" = ["D100", "D101", "E501", "RUF012"]
 "server/common/typing/*.py" = ["F401"]
 "server/implemented.py" = ["PLC0415", "D103"]
 "tests/*.py" = ["D103", "S101"]
@@ -303,7 +303,7 @@ module = "server.contracts.*"
 ignore_errors = true
 
 [[tool.mypy.overrides]]
-module = "server.apps.*.migrations.*"
+module = ["server.apps.*.migrations.*", "server.common.*.migrations.*"]
 # Django migrations should not produce any errors (they are tested anyway):
 ignore_errors = true
 
@@ -333,6 +333,7 @@ python-version = "3.14"
 exclude = [
   "server/contracts",
   "server/apps/*/migrations",
+  "server/common/*/migrations",
   "mutants",
 ]
 
