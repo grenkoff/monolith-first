@@ -8,6 +8,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from server.common.di import HasContainer
+from server.common.outbox.polling import Polling
 from server.common.outbox.relay import Relay
 
 
@@ -24,14 +25,9 @@ class Command(HasContainer, BaseCommand):
         previous = signal.signal(signal.SIGTERM, lambda *_: stopped.set())
         self.stdout.write('relaying events')
         try:
-            self._relay(self.resolve(Relay), stopped)
+            Polling(
+                self.resolve(Relay),
+                settings.OUTBOX_POLL_INTERVAL,
+            ).run(stopped)
         finally:
             signal.signal(signal.SIGTERM, previous)
-
-    def _relay(self, relay: Relay, stopped: threading.Event) -> None:
-        """Delivers events and waits while none is pending, until stopped."""
-        idle = False
-        while not (idle and stopped.is_set()):
-            idle = not relay.deliver()
-            if idle:
-                stopped.wait(settings.OUTBOX_POLL_INTERVAL)
