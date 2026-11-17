@@ -5,6 +5,7 @@ from uuid import UUID, uuid7
 
 import attrs
 
+from server.apps.orders.logic.orders import UnknownOrderError
 from server.apps.orders.logic.usecases.place_order import PlaceOrder
 from server.apps.orders.logic.value_objects import Order, OrderDraft
 
@@ -34,6 +35,10 @@ class _UnsavedOrders:
             quantity=draft.quantity,
             total_cents=total_cents,
         )
+
+    def order(self, identifier: UUID) -> Order:
+        """Finds nothing, since nothing is kept."""
+        raise UnknownOrderError(str(identifier))
 
 
 def test_order_total_comes_from_catalog_price() -> None:

@@ -9,8 +9,11 @@ from dmr.endpoint import Endpoint
 from dmr.errors import ErrorType
 from dmr.metadata import ResponseSpec
 
-from server.apps.orders.logic.orders import ProductNotOnSaleError
-from server.apps.orders.logic.usecases import place_order
+from server.apps.orders.logic.orders import (
+    ProductNotOnSaleError,
+    UnknownOrderError,
+)
+from server.apps.orders.logic.usecases import find_order, place_order
 from server.apps.orders.logic.value_objects import Order, OrderDraft
 from server.common.di import HasContainer
 from server.common.serializers import StrictMsgspecSerializer
@@ -61,11 +64,32 @@ class OrderGet(
 ):
     """Shows placed orders over HTTP."""
 
+    @modify(
+        extra_responses=[
+            ResponseSpec(
+                Controller.error_model,
+                status_code=HTTPStatus.NOT_FOUND,
+            ),
+        ],
+    )
     def get(self) -> Order:
         """Returns the order with the id from the path."""
-        return Order(
-            id=self.kwargs['id'],
-            product=self.kwargs['id'],
-            quantity=0,
-            total_cents=0,
-        )
+        return self.resolve(find_order.FindOrder)(self.kwargs['id'])
+
+    @override
+    def handle_error(
+        self,
+        endpoint: Endpoint,
+        controller: Controller[StrictMsgspecSerializer],
+        exc: Exception,
+    ) -> HttpResponse:
+        """Answers 404 when no order has the id."""
+        if isinstance(exc, UnknownOrderError):
+            return self.to_error(
+                self.format_error(
+                    'Order not found',
+                    error_type=ErrorType.not_found,
+                ),
+                status_code=HTTPStatus.NOT_FOUND,
+            )
+        return super().handle_error(endpoint, controller, exc)
