@@ -20,6 +20,24 @@ def _module(root: Path, name: str, *callees: str) -> None:
     )
 
 
+def _subscriber(root: Path, name: str, publisher: str) -> None:
+    """Writes a module whose infra reads the events of another module."""
+    (root / name / 'infra' / 'subscribers.py').write_text(
+        f'from server.apps.{publisher}.public.events import Fact\n'
+        f'from server.apps.{publisher}.public import events\n',
+    )
+
+
+def test_accepts_subscriptions_to_events(tmp_path: Path) -> None:
+    _module(tmp_path, _BILLING, _CATALOG)
+    _module(tmp_path, _CATALOG)
+    _subscriber(tmp_path, _CATALOG, _BILLING)
+
+    problems = list(ModuleTree(tmp_path).problems())
+
+    assert not problems
+
+
 def test_reports_call_chain_between_modules(tmp_path: Path) -> None:
     _module(tmp_path, _BILLING, _CATALOG)
     _module(tmp_path, _CATALOG, 'pricing')
