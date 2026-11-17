@@ -30,7 +30,7 @@ def test_product_created_with_uuid7_id(dmr_client: DMRClient, url: str) -> None:
     assert response.status_code == HTTPStatus.CREATED
     product = response.json()
     assert UUID(product.pop('id')).version == 7
-    assert product == _draft(_TEA, _PRICE)
+    assert product == {**_draft(_TEA, _PRICE), 'sold': 0}
 
 
 @pytest.mark.django_db

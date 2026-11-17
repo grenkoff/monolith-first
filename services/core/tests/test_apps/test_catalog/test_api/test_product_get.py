@@ -32,7 +32,12 @@ def test_product_read_by_id(
 
     assert response.status_code == HTTPStatus.OK
     assert response.json() == product
-    assert queries == snapshot(['SELECT ... FROM catalog_product WHERE ... LIMIT ...'])
+    assert queries == snapshot([
+        (
+            'SELECT ... FROM catalog_product LEFT OUTER JOIN catalog_sale '
+            'ON ... WHERE ... GROUP BY ... LIMIT ...'
+        ),
+    ])
 
 
 @pytest.mark.django_db

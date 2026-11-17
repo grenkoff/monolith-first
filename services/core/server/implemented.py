@@ -57,8 +57,16 @@ def _inject_orders(container: punq.Container, facade: Catalog) -> None:
     )
 
 
+def _inject_relay(container: punq.Container) -> None:
+    """Registers the relay with the subscribers of every topic."""
+    from server.common.outbox.relay import Relay
+
+    container.register(Relay, instance=Relay({}))
+
+
 def populate_dependencies(container: punq.Container) -> punq.Container:
     """Registers the objects of every module in the container."""
     _inject_greetings(container)
     _inject_orders(container, _inject_catalog(container))
+    _inject_relay(container)
     return container
