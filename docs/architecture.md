@@ -36,7 +36,22 @@ Until the example is replaced, `catalog` and `orders` show two modules:
 `orders` asks the `Catalog` facade of `catalog/public/` for the price of a
 product through its own protocol `Prices` and the adapter `CatalogPrices`
 in its `infra/`, keeps the product by its id and stores the total it was
-sold at.
+sold at. The other way round goes through the outbox:
+
+```
+POST /orders/ ─▶ orders: INSERT order + INSERT outbox_event (one transaction)
+                                      │
+           core-relay (manage.py relay_events), after commit
+                                      ▼
+            catalog: RecordedSales, one sale per event id ─▶ "sold"
+```
+
+The outbox (`server/common/outbox/`) is technical, not a module: one table
+of pending events with the topic and a JSON payload. The relay delivers the
+oldest event to the subscribers of its topic in a transaction of its own
+and removes it; a subscriber that fails leaves it for the next run. Topics
+are named like NATS subjects (`orders.v1.order_placed`), so once a module
+leaves, the same relay publishes its events to NATS.
 
 ## A module
 

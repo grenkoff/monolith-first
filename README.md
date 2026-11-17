@@ -49,6 +49,7 @@ a service:
 
 ```
 POST /api/v1/orders/    ─▶ orders ─facade─▶ catalog                     (one process)
+                           orders ─outbox─▶ core-relay ─▶ catalog sales  (after commit)
 POST /api/v1/greetings/ ─▶ core ─gRPC─▶ hello ─▶ NATS hello.v1.greeted ─▶ core-events
 ```
 

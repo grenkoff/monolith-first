@@ -36,8 +36,8 @@ Example: `POST /api/v1/greetings/` in `server/apps/greetings/`.
    (`GreetingsUnavailableError`).
 4. Implementations of the protocols in `infra/` (`remote.RemoteGreetings`),
    with every network call bounded by a timeout from settings.
-5. Build and bind them by hand in `server/implemented.py`, in the function
-   of the app:
+5. Build and bind them by hand in `server/composition/<app>.py`, called
+   from the composition root `server/implemented.py`:
    `container.register(greet.Greet, instance=greet.Greet(remote.RemoteGreetings(settings)))`.
 6. A `dmr` controller in `api/views.py`: `HasContainer` and
    `Controller[StrictMsgspecSerializer]`, the handler resolves the use case,
@@ -80,8 +80,9 @@ Example: `orders` prices an order with the `Catalog` facade of `catalog`.
 4. Keep the other module's entities by id (`Order.product` is a
    `UUIDField`, never a foreign key), and copy what must not change later
    (the total an order was sold at).
-5. Wire the adapter with the facade in `server/implemented.py`
-   (`_inject_orders`).
+5. Wire the adapter with the facade in `server/composition/orders.py`;
+   `server/implemented.py` hands it the facade that
+   `server/composition/catalog.py` builds.
 
 ## Add a Rust service
 
@@ -130,7 +131,31 @@ Example: `services/hello/`.
    (`RemoteGreetings`), tested against the in-process fake server in
    `tests/plugins/<app>/` (`hello_server.py`).
 
-## Add an event
+## Add an event between modules
+
+Example: `orders` publishes `orders.v1.order_placed`, `catalog` records a
+sale.
+
+1. The fact in `public/events.py` of the publisher: a frozen
+   `msgspec.Struct` named in the past tense with a UUIDv7 `id`
+   (`OrderPlaced`), and its topic as a constant named like the future NATS
+   subject (`ORDER_PLACED = 'orders.v1.order_placed'`).
+2. The publisher writes it with `Outbox.add(topic, fact)` inside the
+   `transaction.atomic()` that writes the change (`StoredOrders.add`); the
+   query snapshot of the test shows both inserts inside one savepoint.
+3. The subscriber in the `infra/` of the other module implements
+   `Subscriber.receive(envelope)`: it converts the payload into the fact
+   and writes under the event id, so a second delivery changes nothing
+   (`RecordedSales`, `get_or_create` by the event id). Importing
+   `public/events.py` of the publisher is a subscription, not a call, for
+   `make architecture`.
+4. Register the subscriber for the topic in `server/composition/outbox.py`.
+   `core-relay` (`manage.py relay_events`) delivers each event after commit
+   in a transaction of its own and removes it; a subscriber that raises
+   leaves the event for the next run.
+5. `make e2e` proves the order reaches the catalog through `core-relay`.
+
+## Add an event of an extracted service
 
 Example: `hello` publishes `hello.v1.greeted`, `core-events` records it.
 
@@ -142,7 +167,7 @@ Example: `hello` publishes `hello.v1.greeted`, `core-events` records it.
    and translates the event into protobuf; a fake (`events::Memory`)
    proves the use case publishes it.
 3. Publish only after the data it reports is committed: after `commit()`
-   in sqlx, inside `transaction.on_commit` in Django.
+   in sqlx; in `core` through the outbox (see above).
 4. Consumer in `core`: protocols in `logic/` (`Inbox`, `Journal`), a use
    case that reads the inbox (`usecases.listen`), adapters in `infra/`, a
    management command as the entrypoint (`listen_greetings`) and a Compose
@@ -185,13 +210,15 @@ Once the first real module exists, in its own pull request:
 
 1. `services/core/server/apps/catalog/` and `server/apps/orders/`, their
    lines in `INSTALLED_APPS`, their routers in `server/urls.py`,
-   `_inject_catalog` and `_inject_orders` in `server/implemented.py`, their
-   tests in `tests/test_apps/test_catalog/` and `tests/test_apps/test_orders/`.
+   `server/composition/catalog.py` and `orders.py` with their calls in
+   `server/implemented.py`, the `OrderPlaced` subscription in
+   `server/composition/outbox.py`, their tests in
+   `tests/test_apps/test_catalog/` and `tests/test_apps/test_orders/`.
 2. `services/hello/`, `proto/hello/`, its lines in `contracts/build.rs`
    and `contracts/src/lib.rs`, its member in `Cargo.toml`.
 3. `services/core/server/apps/greetings/`, its line in `INSTALLED_APPS`,
-   its router in `server/urls.py`, `_inject_greetings` in
-   `server/implemented.py`, its settings (`HELLO_GRPC_*`) in
+   its router in `server/urls.py`, `server/composition/greetings.py` and
+   its call in `server/implemented.py`, its settings (`HELLO_GRPC_*`) in
    `server/settings/components/services.py` and `config/.env.template`.
 4. Its tests: `tests/test_apps/test_greetings/`, `tests/plugins/greetings/`.
 5. `hello` and `core-events` in `compose.yml`, the `HELLO_GRPC_ADDR` of

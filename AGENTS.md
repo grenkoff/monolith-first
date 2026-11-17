@@ -130,6 +130,7 @@ monolith was built for it, so every module is kept ready to leave.
 |---------|----------|------|
 | `core` | Python, Django | the monolith: every module, the only public HTTP API, auth, admin |
 | `db` | — | PostgreSQL of `core` |
+| `core-relay` | Python, Django | the same image as `core`: delivers events from the outbox after commit |
 | `<name>` | Rust | a module extracted into its own service; `hello` is the example |
 | `nats` | — | message broker, from the first extracted service on |
 
@@ -222,8 +223,10 @@ Machine-enforced by `make architecture`, a CI job of its own:
 - import-linter: the layers of a module; only `infra` imports the
   `public` package of another module;
 - `scripts/modules.py`: no chain or cycle of synchronous calls between
-  modules; no module named after a technical layer (`api`, `auth`,
-  `common`, `core`, `helpers`, `infra`, `logging`, `shared`, `utils`);
+  modules (importing the `public/events.py` of another module is a
+  subscription, not a call); no module named after a technical layer
+  (`api`, `auth`, `common`, `core`, `helpers`, `infra`, `logging`,
+  `shared`, `utils`);
 - `scripts/relations.py`: no foreign key, one-to-one or many-to-many
   relation between models of two modules;
 - `scripts/keys.py`: every model of a module has a UUIDv7 primary key
@@ -307,7 +310,8 @@ Layers:
 `public` is the innermost layer of a module: it imports nothing else of its
 module, so it maps one to one onto `proto/` when the module leaves. The
 module implements its facade in `logic/` or `infra/` and binds it in
-`server/implemented.py`.
+`server/composition/<module>.py`, which the composition root
+`server/implemented.py` calls.
 
 EO010: modules under `src/domain/` use no I/O crate (`tokio`, `tonic`,
 `axum`, `sqlx`, `async_nats`, `prost`), no generated code from `contracts`
@@ -671,7 +675,8 @@ Step-by-step recipes live in `docs/cookbook.md` (`/cookbook`); in short:
 2. Red/green in `tests/test_apps/<app>/test_api/`: status codes, body,
    errors.
 3. A use case object in `logic/usecases/`, collaborators as protocols in
-   `logic/`, implementations in `infra/`, bound in `server/implemented.py`.
+   `logic/`, implementations in `infra/`, bound in
+   `server/composition/<module>.py`.
 4. A `dmr` controller in `api/views.py` with every error response declared
    (`modify(extra_responses=...)`), routed in `api/urls.py`.
 5. schemathesis must pass for the new operation.
@@ -686,15 +691,18 @@ Step-by-step recipes live in `docs/cookbook.md` (`/cookbook`); in short:
 
 **Use another module**
 1. Call its facade from `public/` through a protocol of your module in
-   `logic/` and an adapter in `infra/`, bound in `server/implemented.py`:
+   `logic/` and an adapter in `infra/`, bound in
+   `server/composition/<module>.py`:
    the adapter is what becomes a gRPC client when that module leaves.
 2. Need its data often: subscribe to its events and keep a copy.
 
 **Add an event**
-1. A transfer object named as a fact in the past tense (`Greeted`) in the
-   `public/` package of the publisher, with a UUIDv7 id.
+1. A transfer object named as a fact in the past tense (`OrderPlaced`) in
+   `public/events.py` of the publisher, with a UUIDv7 id, and its topic
+   named like the future NATS subject (`orders.v1.order_placed`).
 2. The publisher writes it to the outbox in the transaction of the change;
-   the subscriber handles it idempotently (see "Data integrity").
+   the subscriber handles it idempotently (see "Data integrity") and is
+   registered for the topic in `server/composition/outbox.py`.
 
 **Add a model and a migration**
 1. Django: change `models.py` with a UUIDv7 primary key, `makemigrations`,
