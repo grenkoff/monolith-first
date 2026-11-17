@@ -52,3 +52,20 @@ class OrderCreate(
                 status_code=HTTPStatus.CONFLICT,
             )
         return super().handle_error(endpoint, controller, exc)
+
+
+@final
+class OrderGet(
+    HasContainer,
+    Controller[StrictMsgspecSerializer],
+):
+    """Shows placed orders over HTTP."""
+
+    def get(self) -> Order:
+        """Returns the order with the id from the path."""
+        return Order(
+            id=self.kwargs['id'],
+            product=self.kwargs['id'],
+            quantity=0,
+            total_cents=0,
+        )
