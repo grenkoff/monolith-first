@@ -1,6 +1,13 @@
-"""Composition root: binds every protocol to its implementation."""
+"""Composition root: builds the use cases of every module with their parts."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import punq
+
+if TYPE_CHECKING:
+    from server.apps.catalog.public.products import Catalog
 
 
 def _inject_greetings(container: punq.Container) -> None:
@@ -16,8 +23,8 @@ def _inject_greetings(container: punq.Container) -> None:
     )
 
 
-def _inject_catalog(container: punq.Container) -> None:
-    """Registers the objects of the catalog in the container."""
+def _inject_catalog(container: punq.Container) -> Catalog:
+    """Registers the objects of the catalog and returns its facade."""
     from server.apps.catalog.infra import products
     from server.apps.catalog.logic.usecases import add_product, find_product
 
@@ -30,21 +37,18 @@ def _inject_catalog(container: punq.Container) -> None:
         find_product.FindProduct,
         instance=find_product.FindProduct(stored),
     )
+    return stored
 
 
-def _inject_orders(container: punq.Container) -> None:
+def _inject_orders(container: punq.Container, facade: Catalog) -> None:
     """Registers the objects of orders, with the catalog behind its facade."""
-    from server.apps.catalog.infra import products
     from server.apps.orders.infra import catalog, orders
     from server.apps.orders.logic.usecases import find_order, place_order
 
     stored = orders.StoredOrders()
     container.register(
         place_order.PlaceOrder,
-        instance=place_order.PlaceOrder(
-            catalog.CatalogPrices(products.StoredProducts()),
-            stored,
-        ),
+        instance=place_order.PlaceOrder(catalog.CatalogPrices(facade), stored),
     )
     container.register(
         find_order.FindOrder,
@@ -55,6 +59,5 @@ def _inject_orders(container: punq.Container) -> None:
 def populate_dependencies(container: punq.Container) -> punq.Container:
     """Registers the objects of every module in the container."""
     _inject_greetings(container)
-    _inject_catalog(container)
-    _inject_orders(container)
+    _inject_orders(container, _inject_catalog(container))
     return container
