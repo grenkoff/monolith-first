@@ -17,6 +17,7 @@ INSTALLED_APPS: tuple[str, ...] = (
     'server.apps.accounts',
     'server.apps.catalog',
     'server.apps.orders',
+    'server.common.outbox',
     # Default django apps:
     'django.contrib.auth',
     'django.contrib.contenttypes',

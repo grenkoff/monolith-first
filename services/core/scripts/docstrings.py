@@ -16,7 +16,7 @@ _EXCLUDED = (
     '.venv/**',
     'mutants/**',
     'server/contracts/**',
-    'server/apps/*/migrations/*',
+    'server/**/migrations/*',
 )
 
 
