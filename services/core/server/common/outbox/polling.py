@@ -29,3 +29,7 @@ class Polling:
 
     def run(self, stop: Stop) -> None:
         """Delivers until a stop comes while nothing is pending."""
+        timeout = self._interval
+        for delivered in iter(self._relay.deliver, None):
+            if not delivered and stop.wait(timeout):
+                return
