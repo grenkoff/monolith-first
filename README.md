@@ -44,14 +44,16 @@ docs/                architecture, coding rules, cookbook, patterns registry
 compose.yml          the whole system
 ```
 
-The example request flow:
+The example flows: two modules inside `core`, and a module extracted into
+a service:
 
 ```
+POST /api/v1/orders/    ─▶ orders ─facade─▶ catalog                     (one process)
 POST /api/v1/greetings/ ─▶ core ─gRPC─▶ hello ─▶ NATS hello.v1.greeted ─▶ core-events
 ```
 
-Keep `hello` and the `greetings` app as a reference until your own services
-exist, then delete them.
+Keep `catalog`, `orders`, `hello` and the `greetings` app as a reference
+until your own modules exist, then delete them.
 
 ## Checks
 

@@ -74,23 +74,25 @@ To add snapshots to a test:
   from inline_snapshot_django import snapshot_queries
 
   @pytest.mark.django_db
-  def test_blog_post_get(dmr_client: DMRClient, blog_post: BlogPost) -> None:
-      """Ensures that blog posts can be fetched."""
-      with snapshot_queries() as snap:  # <---- Capture queries.
+  def test_product_read_by_id(
+      dmr_client: DMRClient,
+      product: dict[str, object],
+  ) -> None:
+      with snapshot_queries() as queries:  # <---- Capture queries.
           response = dmr_client.get(
-              reverse('api:v1:main:blog_post_get', kwargs={'id': blog_post.pk}),
+              reverse('api:v1:catalog:product_get', kwargs={'id': product['id']}),
           )
 
       assert response.status_code == HTTPStatus.OK
-      assert snap == snapshot()  # <---- Write empty, first run fills it.
-      msgspec.convert(response.json(), type=BlogPostFullPayload)
+      assert response.json() == product
+      assert queries == snapshot()  # <---- Write empty, first run fills it.
 
 After the first pytest run the snapshot will be updated in-place:
 
 .. code:: python
 
-      assert snap == snapshot([
-          'SELECT ... FROM main_blogpost WHERE ... LIMIT ...',
+      assert queries == snapshot([
+          'SELECT ... FROM catalog_product WHERE ... LIMIT ...',
       ])
 
 When the expected output changes, update all snapshots with:

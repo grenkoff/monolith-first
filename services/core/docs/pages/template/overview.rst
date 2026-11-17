@@ -67,8 +67,8 @@ server
 - ``server/wsgi.py`` - ``django`` `wsgi definition <https://en.wikipedia.org/wiki/Web_Server_Gateway_Interface>`_
 - ``server/asgi.py`` - ``django`` `asgi definition <https://en.wikipedia.org/wiki/Asynchronous_Server_Gateway_Interface>`_
 - ``server/apps/`` - place to put all your apps into
-- ``server/apps/main`` - ``django`` application, used as an example,
-  could be removed
+- ``server/apps/catalog`` and ``server/apps/orders`` - example modules
+  that meet through a facade, could be removed
 - ``server/settings`` - settings defined with ``django-split-settings``,
   see this `tutorial <https://medium.com/wemake-services/managing-djangos-settings-e2b7f496120d>`_
   for more information
@@ -100,8 +100,8 @@ tests
 - ``tests/plugins`` - ``pytest`` plugins that are used in this project
 - ``tests/test_server`` - tests that ensure that basic ``django``
   stuff is working, should not be removed
-- ``tests/test_apps/test_main`` - example tests for the ``django`` app,
-  could be removed
+- ``tests/test_apps/test_catalog`` and ``tests/test_apps/test_orders`` -
+  example tests for the example modules, could be removed
 - ``tests/conftest.py`` - main configuration file for ``pytest`` runner
 
 docs
