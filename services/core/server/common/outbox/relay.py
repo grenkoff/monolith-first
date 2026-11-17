@@ -5,6 +5,9 @@ from typing import Protocol, final
 from uuid import UUID
 
 import attrs
+from django.db import transaction
+
+from server.common.outbox.models import Event
 
 
 @final
@@ -31,5 +34,12 @@ class Relay:
     _subscribers: Mapping[str, Sequence[Subscriber]]
 
     def deliver(self) -> bool:
-        """Delivers the oldest pending event; tells whether there was one."""
+        """Delivers and removes the oldest event; tells whether there was one."""
+        with transaction.atomic():
+            pending = Event.objects.select_for_update(skip_locked=True).order_by('id')
+            for event in pending[:1]:
+                for subscriber in self._subscribers.get(event.topic, ()):
+                    subscriber.receive(Envelope(event.id, event.payload))
+                event.delete()
+                return True
         return False
