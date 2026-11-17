@@ -8,11 +8,12 @@ import msgspec
 
 @final
 class Product(msgspec.Struct, frozen=True):
-    """Product on sale: its id, name and price in cents."""
+    """Product on sale: its id, name, price in cents and quantity sold."""
 
     id: UUID
     name: str
     price_cents: int
+    sold: int
 
 
 @final
