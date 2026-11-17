@@ -51,7 +51,10 @@ def test_order_placed_at_catalog_price(
     assert UUID(order.pop(_ID)).version == 7
     assert order == {**_draft(product, 3), 'total_cents': 1050}
     assert queries == snapshot([
-        'SELECT ... FROM catalog_product WHERE ... LIMIT ...',
+        (
+            'SELECT ... FROM catalog_product LEFT OUTER JOIN catalog_sale '
+            'ON ... WHERE ... GROUP BY ... LIMIT ...'
+        ),
         'SAVEPOINT s1',
         'INSERT INTO orders_order (...) VALUES (...)',
         'INSERT INTO outbox_event (...) VALUES (...)',
