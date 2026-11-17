@@ -13,6 +13,13 @@ class ProductNotOnSaleError(LookupError):
     __slots__ = ()
 
 
+@final
+class UnknownOrderError(LookupError):
+    """Raised when no order has the given id."""
+
+    __slots__ = ()
+
+
 class Prices(Protocol):
     """Current prices of the products that can be ordered."""
 
@@ -25,3 +32,6 @@ class Orders(Protocol):
 
     def add(self, draft: OrderDraft, total_cents: int) -> Order:
         """Keeps the order with its total and returns it."""
+
+    def order(self, identifier: UUID) -> Order:
+        """Returns the order with the id or raises UnknownOrderError."""
