@@ -16,10 +16,9 @@ class RecordedSales:
     """Observer: records each placed order as a sale of its product."""
 
     def receive(self, envelope: Envelope) -> None:
-        """Keeps the sale under the id of the event that reported it."""
+        """Keeps the sale under its event id, once however often it comes."""
         placed = msgspec.convert(envelope.payload, OrderPlaced)
-        models.Sale.objects.create(
+        models.Sale.objects.get_or_create(
             id=placed.id,
-            product_id=placed.product,
-            quantity=placed.quantity,
+            defaults={'product_id': placed.product, 'quantity': placed.quantity},
         )
