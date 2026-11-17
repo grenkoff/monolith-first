@@ -58,7 +58,7 @@ run_ci () {
   typos .
 
   # Linl HTML formatting:
-  find server -type f -name '*.html' | xargs djangofmt \
+  find server -type f -name '*.html' | xargs --no-run-if-empty djangofmt \
     --line-length=80 --indent-width=2
 
   # Running type checking, see https://github.com/typeddjango/django-stubs

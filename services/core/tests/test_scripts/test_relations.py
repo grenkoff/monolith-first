@@ -7,9 +7,9 @@ from django.db import models
 
 from scripts.relations import RelationReport
 
-_MAIN: Final = 'server.apps.main'
+_CATALOG: Final = 'server.apps.catalog'
 _GREETINGS: Final = 'server.apps.greetings'
-_LABEL: Final = 'main'
+_LABEL: Final = 'catalog'
 
 
 def _model(registry: Apps, name: str, label: str, **fields: Any) -> type:
@@ -18,12 +18,12 @@ def _model(registry: Apps, name: str, label: str, **fields: Any) -> type:
     return type(
         name,
         (models.Model,),
-        {'__module__': f'{_MAIN}.models', 'Meta': meta, **fields},
+        {'__module__': f'{_CATALOG}.models', 'Meta': meta, **fields},
     )
 
 
 def test_reports_relation_to_another_module() -> None:
-    registry = Apps([_MAIN, _GREETINGS])
+    registry = Apps([_CATALOG, _GREETINGS])
     post = _model(registry, 'Post', _LABEL)
     _model(
         registry,
@@ -34,11 +34,11 @@ def test_reports_relation_to_another_module() -> None:
 
     problems = list(RelationReport(registry).problems())
 
-    assert problems == ['greetings.Greeting.post refers to main.Post']
+    assert problems == ['greetings.Greeting.post refers to catalog.Post']
 
 
 def test_accepts_relations_inside_a_module() -> None:
-    registry = Apps([_MAIN])
+    registry = Apps([_CATALOG])
     post = _model(registry, 'Post', _LABEL)
     _model(
         registry,
@@ -53,7 +53,7 @@ def test_accepts_relations_inside_a_module() -> None:
 
 
 def test_accepts_framework_relations_to_modules() -> None:
-    registry = Apps([_MAIN, 'django.contrib.admin'])
+    registry = Apps([_CATALOG, 'django.contrib.admin'])
     post = _model(registry, 'Post', _LABEL)
     _model(
         registry,
