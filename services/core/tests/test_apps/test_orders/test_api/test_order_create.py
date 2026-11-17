@@ -6,6 +6,8 @@ from uuid import UUID, uuid7
 import pytest
 from django.urls import reverse
 from dmr.test import DMRClient
+from inline_snapshot import snapshot
+from inline_snapshot_django import snapshot_queries
 
 
 def _draft(product: str, quantity: int) -> dict[str, object]:
@@ -36,12 +38,17 @@ def test_order_placed_at_catalog_price(
     url: str,
     product: str,
 ) -> None:
-    response = dmr_client.post(url, data=_draft(product, 3))
+    with snapshot_queries() as queries:
+        response = dmr_client.post(url, data=_draft(product, 3))
 
     assert response.status_code == HTTPStatus.CREATED
     order = response.json()
     assert UUID(order.pop('id')).version == 7
     assert order == {**_draft(product, 3), 'total_cents': 1050}
+    assert queries == snapshot([
+        'SELECT ... FROM catalog_product WHERE ... LIMIT ...',
+        'INSERT INTO orders_order (...) VALUES (...)',
+    ])
 
 
 @pytest.mark.django_db
