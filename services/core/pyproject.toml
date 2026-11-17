@@ -182,7 +182,6 @@ pydocstyle.convention = "google"
 [tool.ruff.lint.per-file-ignores]
 "server/**/migrations/*.py" = ["D100", "D101", "E501", "RUF012"]
 "server/common/typing/*.py" = ["F401"]
-"server/implemented.py" = ["PLC0415", "D103"]
 "tests/*.py" = ["D103", "S101"]
 
 
