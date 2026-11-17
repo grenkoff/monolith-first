@@ -59,9 +59,14 @@ def _inject_orders(container: punq.Container, facade: Catalog) -> None:
 
 def _inject_relay(container: punq.Container) -> None:
     """Registers the relay with the subscribers of every topic."""
+    from server.apps.catalog.infra import sales
+    from server.apps.orders.public import events
     from server.common.outbox.relay import Relay
 
-    container.register(Relay, instance=Relay({}))
+    container.register(
+        Relay,
+        instance=Relay({events.ORDER_PLACED: (sales.RecordedSales(),)}),
+    )
 
 
 def populate_dependencies(container: punq.Container) -> punq.Container:

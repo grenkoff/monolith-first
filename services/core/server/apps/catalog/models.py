@@ -30,3 +30,21 @@ class Product(models.Model):
     def __str__(self) -> str:
         """Returns the name of the product."""
         return self.name
+
+
+@final
+class Sale(models.Model):
+    """Items of a product sold by one placed order, kept by its event id."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid7, editable=False)
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.PROTECT,
+        related_name='sales',
+    )
+    quantity = models.PositiveIntegerField()
+
+    @override
+    def __str__(self) -> str:
+        """Returns the id of the event that reported the sale."""
+        return str(self.id)
