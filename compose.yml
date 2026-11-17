@@ -82,6 +82,14 @@ services:
     command: python manage.py listen_greetings
     restart: unless-stopped
 
+  core-relay:
+    <<: *core
+    command: python manage.py relay_events
+    restart: unless-stopped
+    depends_on:
+      core-migrate:
+        condition: service_completed_successfully
+
   hello:
     build:
       context: .
