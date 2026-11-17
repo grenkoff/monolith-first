@@ -1,6 +1,7 @@
 """Reports modules of core that break the boundaries between modules."""
 
 import ast
+import re
 import sys
 from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
@@ -21,6 +22,7 @@ _TECHNICAL: Final = frozenset((
     'shared',
     'utils',
 ))
+_EVENTS: Final = re.compile(r'server\.apps\.\w+\.public\.events\b')
 
 
 class Report(Protocol):
@@ -40,17 +42,17 @@ class Names(Protocol):
 @final
 @attrs.define(slots=True, frozen=True)
 class PublicImports(Names):
-    """Modules whose public package some Python code imports."""
+    """Modules whose facade some Python code imports; events are no calls."""
 
     _text: str
 
     @override
     def names(self) -> Iterator[str]:
-        """Yields the module of each imported public package."""
+        """Yields the module of each imported public package but its events."""
         for node in ast.walk(ast.parse(self._text)):
             for source, _ in ImportBindings(node).pairs():
                 found = PUBLIC_PACKAGE.match(source)
-                if found:
+                if found and not _EVENTS.match(source):
                     yield found['module']
 
 
