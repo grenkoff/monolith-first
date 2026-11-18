@@ -21,14 +21,8 @@ x-core: &core
   env_file: ./services/core/config/.env
   environment:
     DJANGO_DATABASE_HOST: db
-    HELLO_GRPC_ADDR: hello:50051
-    NATS_URL: nats://nats:4222
   depends_on:
     db:
-      condition: service_healthy
-    nats:
-      condition: service_healthy
-    hello:
       condition: service_healthy
 
 services:
@@ -45,17 +39,6 @@ services:
       timeout: 30s
       retries: 5
 
-  nats:
-    image: "nats:2-alpine"
-    restart: unless-stopped
-    logging: *logging
-    command: ["--jetstream", "--http_port", "8222"]
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8222/healthz"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-
   core-migrate:
     <<: *core
     command: python manage.py migrate --no-input
@@ -66,8 +49,6 @@ services:
     depends_on:
       core-migrate:
         condition: service_completed_successfully
-      hello:
-        condition: service_healthy
     ports:
       - "8000:8000"
     healthcheck:
@@ -77,11 +58,6 @@ services:
       retries: 10
       start_period: 30s
 
-  core-events:
-    <<: *core
-    command: python manage.py listen_greetings
-    restart: unless-stopped
-
   core-relay:
     <<: *core
     command: python manage.py relay_events
@@ -89,20 +65,6 @@ services:
     depends_on:
       core-migrate:
         condition: service_completed_successfully
-
-  hello:
-    build:
-      context: .
-      dockerfile: ./services/hello/Dockerfile
-    image: "hello:dev"
-    restart: unless-stopped
-    logging: *logging
-    environment:
-      NATS_URL: nats://nats:4222
-      RUST_LOG: info
-    depends_on:
-      nats:
-        condition: service_healthy
 
 volumes:
   postgres-data:

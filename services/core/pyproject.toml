@@ -36,9 +36,6 @@ python-decouple = "^3.8"
 structlog = "^26.1"
 punq = "^0.9"
 
-grpcio = "^1.85"
-protobuf = "^7.36"
-nats-py = "^2.16"
 
 [tool.poetry.group.dev.dependencies]
 django-debug-toolbar = "^8.0"
@@ -67,8 +64,6 @@ inline-snapshot = "^0.34"
 inline-snapshot-django = "^1.4"
 
 django-stubs = { version = ">=6.1,<6.2", extras = ["compatible-mypy"] }
-types-grpcio = ">=1.0"
-types-protobuf = ">=6.32"
 ty = ">=0.0.99"
 mutmut = "^3.8"
 

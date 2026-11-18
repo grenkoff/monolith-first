@@ -8,7 +8,7 @@ from django.db import models
 from scripts.relations import RelationReport
 
 _CATALOG: Final = 'server.apps.catalog'
-_GREETINGS: Final = 'server.apps.greetings'
+_ORDERS: Final = 'server.apps.orders'
 _LABEL: Final = 'catalog'
 
 
@@ -23,18 +23,18 @@ def _model(registry: Apps, name: str, label: str, **fields: Any) -> type:
 
 
 def test_reports_relation_to_another_module() -> None:
-    registry = Apps([_CATALOG, _GREETINGS])
+    registry = Apps([_CATALOG, _ORDERS])
     post = _model(registry, 'Post', _LABEL)
     _model(
         registry,
-        'Greeting',
-        'greetings',
+        'Line',
+        'orders',
         post=models.ForeignKey(post, on_delete=models.CASCADE),
     )
 
     problems = list(RelationReport(registry).problems())
 
-    assert problems == ['greetings.Greeting.post refers to catalog.Post']
+    assert problems == ['orders.Line.post refers to catalog.Post']
 
 
 def test_accepts_relations_inside_a_module() -> None:

@@ -20,13 +20,11 @@ from dmr.routing import Router, build_404_handler, build_500_handler, path
 from health_check.views import HealthCheckView
 
 from server.apps.catalog.api import urls as catalog_api_urls
-from server.apps.greetings.api import urls as greetings_api_urls
 from server.apps.orders.api import urls as orders_api_urls
 
 admin.autodiscover()
 
 router_v1 = Router('v1/')
-router_v1.include(greetings_api_urls.router, namespace='greetings')
 router_v1.include(catalog_api_urls.router, namespace='catalog')
 router_v1.include(orders_api_urls.router, namespace='orders')
 
