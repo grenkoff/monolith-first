@@ -523,7 +523,10 @@ transaction.
   Keep transactions short.
 - **No I/O inside a transaction**: gRPC calls, HTTP requests and NATS
   publishing happen before the transaction or after it commits, never
-  while it holds locks.
+  while it holds locks. The one exception is the outbox relay: it
+  publishes an event to NATS while it holds the lock of that one outbox
+  row, with the event id as `Nats-Msg-Id`, so JetStream drops a repeat
+  after a failed commit.
 - **Events through the outbox**: an event is written to the outbox table in
   the same transaction as the data it reports, so the two are committed or
   lost together; a relay delivers it only after commit, to the subscribers
@@ -718,9 +721,11 @@ Step-by-step recipes live in `docs/cookbook.md` (`/cookbook`); in short:
 2. `services/<name>/` with `src/domain/`, `src/infra/`, `src/api/`,
    `src/main.rs`, its own database; add it to the workspace `members`, a
    `Dockerfile` and a service with a health check in `compose.yml`.
-3. Strangler Fig: in `core`, `make proto`, then switch the adapters behind
-   the facade to gRPC one operation at a time, events from the outbox to
-   NATS; delete the module from `core` when nothing goes through it.
+3. Strangler Fig, one pull request per step (`docs/cookbook.md`): copy
+   the data into the service through outbox events published to NATS,
+   switch reads behind the facade to gRPC one operation at a time, then
+   writes; delete the module from `core` when nothing goes through it,
+   keeping its `public/`, its gRPC adapter and its HTTP API.
 
 **Add a gRPC method** (to an extracted service)
 1. Change `proto/` (an additive change, or a new version for a breaking
