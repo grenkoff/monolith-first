@@ -1,9 +1,8 @@
 # Cookbook
 
 Step-by-step recipes for the typical tasks of `AGENTS.md`. The example
-modules `catalog` and `orders`, the example service `hello` and the
-example app `greetings` show every step in real code; copy their shape,
-not their names.
+modules `catalog` and `orders` show every step inside the monolith in real
+code; copy their shape, not their names.
 
 Every recipe starts and ends the same way:
 
@@ -22,23 +21,23 @@ do the job or only need a decorator.
 
 ## Add an HTTP endpoint to `core`
 
-Example: `POST /api/v1/greetings/` in `server/apps/greetings/`.
+Example: `POST /api/v1/orders/` in `server/apps/orders/`.
 
 1. Value objects in `logic/value_objects.py`: the request and the response
-   as frozen `msgspec.Struct`, validated on construction (`GreetingRequest`,
-   `GreetingText`).
+   as frozen `msgspec.Struct`, validated on construction (`OrderDraft`,
+   `Order`).
 2. Red: an API test in `tests/test_apps/test_<app>/test_api/` that posts
    through the Django test client and checks the status code and the body;
    then one test per error status.
-3. A use case object in `logic/usecases/<name>.py` (`greet.Greet`): a
-   frozen `attrs` class that receives its collaborators as protocols from
-   `logic/` (`Greetings`) and raises domain errors
-   (`GreetingsUnavailableError`).
-4. Implementations of the protocols in `infra/` (`remote.RemoteGreetings`),
+3. A use case object in `logic/usecases/<name>.py` (`place_order.PlaceOrder`):
+   a frozen `attrs` class that receives its collaborators as protocols from
+   `logic/` (`Prices`, `Orders`) and raises domain errors
+   (`ProductNotOnSaleError`).
+4. Implementations of the protocols in `infra/` (`orders.StoredOrders`),
    with every network call bounded by a timeout from settings.
 5. Build and bind them by hand in `server/composition/<app>.py`, called
    from the composition root `server/implemented.py`:
-   `container.register(greet.Greet, instance=greet.Greet(remote.RemoteGreetings(settings)))`.
+   `container.register(place_order.PlaceOrder, instance=place_order.PlaceOrder(catalog.CatalogPrices(facade), stored))`.
 6. A `dmr` controller in `api/views.py`: `HasContainer` and
    `Controller[StrictMsgspecSerializer]`, the handler resolves the use case,
    `@modify(extra_responses=[...])` declares every error status, and
@@ -86,26 +85,24 @@ Example: `orders` prices an order with the `Catalog` facade of `catalog`.
 
 ## Add a Rust service
 
-Example: `services/hello/`.
-
 1. Contract first: `proto/<name>/v1/<name>.proto`, package `<name>.v1`,
-   service `<Name>Service`. Compile it in `contracts/build.rs` (add the
-   file to `compile_protos`) and expose it in `contracts/src/lib.rs` as
-   `pub mod <name> { pub mod v1 { tonic::include_proto!("<name>.v1"); } }`.
-2. `services/<name>/Cargo.toml` like the one of `hello`: every
-   dependency, `contracts` and dev-dependencies included, comes from
-   `[workspace.dependencies]` (`.workspace = true`), and
-   `[lints] workspace = true`. Add the crate to `members` in the root
-   `Cargo.toml`.
+   service `<Name>Service`. The `contracts` crate compiles every `.proto`
+   in `proto/` by itself and exposes it as `contracts::<name>::v1`.
+2. `services/<name>/Cargo.toml`: every dependency, `contracts` and
+   dev-dependencies included, comes from `[workspace.dependencies]`
+   (`.workspace = true`; add a missing one there first, with
+   `contracts = { path = "contracts" }`), and `[lints] workspace = true`.
+   Add the crate to `members` in the root `Cargo.toml`.
 3. Layers under `src/`: `domain/` (newtypes, traits, errors; no I/O, rule
    EO010), `infra/` (adapters to NATS, sqlx, gRPC clients, settings),
    `api/` (tonic and axum entrypoints), `lib.rs` exposing them, and
    `main.rs` as the composition root that reads settings from the
    environment and wires the objects.
 4. Red/green per behaviour: unit tests next to the code
-   (`#[cfg(test)] mod tests`), fakes of the domain traits (like
-   `events::Memory`), integration tests in `tests/` with testcontainers.
-5. A `Dockerfile` like `services/hello/Dockerfile`: build stage with
+   (`#[cfg(test)] mod tests`), fakes of the domain traits (an in-memory
+   implementation of the trait), integration tests in `tests/` with
+   testcontainers.
+5. A `Dockerfile` in `services/<name>/`: build stage with
    `protobuf-compiler`, a non-root runtime user, `HEALTHCHECK` against the
    health route of axum.
 6. A service in `compose.yml` with its environment; services that call it
@@ -127,9 +124,9 @@ Example: `services/hello/`.
    behaviour in `domain/`, the translation between protobuf and domain
    types in `api/` or `infra/`.
 4. Client side in `core`, red/green: an adapter in `infra/` that maps gRPC
-   status codes to domain errors and uses a timeout from settings
-   (`RemoteGreetings`), tested against the in-process fake server in
-   `tests/plugins/<app>/` (`hello_server.py`).
+   status codes to domain errors and uses a timeout from settings, tested
+   against an in-process fake server in `tests/plugins/<app>/`. The first
+   client brings `grpcio` and `protobuf` into the dependencies of `core`.
 
 ## Add an event between modules
 
@@ -157,21 +154,18 @@ sale.
 
 ## Add an event of an extracted service
 
-Example: `hello` publishes `hello.v1.greeted`, `core-events` records it.
-
 1. A message named as a fact in the past tense in the `.proto` file of the
    publisher (`Greeted`); the subject is `<service>.v<N>.<event>` in snake
-   case. `make proto`.
-2. Publisher in Rust: the domain owns the event type and a trait
-   (`domain::events::Events`), `infra/` implements it (`infra::nats::Nats`)
-   and translates the event into protobuf; a fake (`events::Memory`)
-   proves the use case publishes it.
+   case (`hello.v1.greeted`). `make proto`.
+2. Publisher in Rust: the domain owns the event type and a trait,
+   `infra/` implements it with `async-nats` and translates the event into
+   protobuf; an in-memory fake proves the use case publishes it.
 3. Publish only after the data it reports is committed: after `commit()`
    in sqlx; in `core` through the outbox (see above).
-4. Consumer in `core`: protocols in `logic/` (`Inbox`, `Journal`), a use
-   case that reads the inbox (`usecases.listen`), adapters in `infra/`, a
-   management command as the entrypoint (`listen_greetings`) and a Compose
-   service that runs it (`core-events`).
+4. Consumer in `core`: protocols in `logic/`, a use case that reads them,
+   adapters in `infra/` with `nats-py`, a management command as the
+   entrypoint and a Compose service that runs it, next to a `nats` service
+   with JetStream.
 5. Make the consumer idempotent: JetStream may deliver an event again, so
    record the event id in the same transaction as the write and skip ids
    already seen.
@@ -214,14 +208,5 @@ Once the first real module exists, in its own pull request:
    `server/implemented.py`, the `OrderPlaced` subscription in
    `server/composition/outbox.py`, their tests in
    `tests/test_apps/test_catalog/` and `tests/test_apps/test_orders/`.
-2. `services/hello/`, `proto/hello/`, its lines in `contracts/build.rs`
-   and `contracts/src/lib.rs`, its member in `Cargo.toml`.
-3. `services/core/server/apps/greetings/`, its line in `INSTALLED_APPS`,
-   its router in `server/urls.py`, `server/composition/greetings.py` and
-   its call in `server/implemented.py`, its settings (`HELLO_GRPC_*`) in
-   `server/settings/components/services.py` and `config/.env.template`.
-4. Its tests: `tests/test_apps/test_greetings/`, `tests/plugins/greetings/`.
-5. `hello` and `core-events` in `compose.yml`, the `HELLO_GRPC_ADDR` of
-   `core`, and the request of `scripts/e2e.sh` (point it at the new
-   service).
-6. `make proto`, `make patterns`, `make check`.
+2. The requests of `scripts/e2e.sh`: point them at the new module.
+3. `make patterns`, `make check`.

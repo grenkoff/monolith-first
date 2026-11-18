@@ -25,8 +25,8 @@ Repeat. Each cycle takes minutes, not hours.
 - **Test behaviour through the public interface** (traits, protocols, HTTP
   API), not private details. Then refactoring does not break tests.
 - **Fakes over mocks.** Prefer a real small implementation of the same
-  interface (`events::Memory` in Rust, the fake gRPC server in
-  `tests/plugins/greetings/hello_server.py`) to mocking libraries.
+  interface (an in-memory implementation of a protocol or a trait, an
+  in-process fake gRPC server) to mocking libraries.
   Elegant Objects make this easy: every collaborator is an interface.
 - **Contract first.** For a new gRPC method: change `proto/`, run
   `make proto`, write the failing test on both sides, then implement.

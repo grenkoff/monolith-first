@@ -102,11 +102,11 @@ service next to the monolith:
 - **Only `core` is public**; a service has its own database and deploys
   alone.
 
-Until the example is replaced, `hello` shows such a service: `core` asks it
-for a greeting over gRPC, and it publishes `hello.v1.greeted`, which
-`core-events` consumes.
+The template runs no such service: the Rust workspace, `eo-lint`, the
+`contracts` crate and buf are kept ready and checked in CI, so the first
+module that leaves starts from green tooling.
 
-A service follows the layout of `services/hello/src`: `api/` (tonic
+A service follows the layout `services/<name>/src`: `api/` (tonic
 endpoint, axum health check) → `infra/` (NATS adapter, settings) →
 `domain/` (no I/O); `main.rs` wires them. `eo-lint` rule EO010 keeps I/O
 crates, generated contracts and the outer layers out of `domain/`.

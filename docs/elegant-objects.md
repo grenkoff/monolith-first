@@ -35,9 +35,6 @@ greeting.text(polite: true)
 Polite::new(Plain::new(Trimmed::new(Raw::new(name)))).text()
 ```
 
-See `services/hello/src/domain/greeting.rs` and
-`services/hello/src/domain/name.rs`.
-
 ## No exceptions
 
 There is no way to waive a rule: no attribute, no directive, no
