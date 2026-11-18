@@ -50,8 +50,7 @@ all of them, including the GitHub settings):
 4. `make env`, then `make check`: everything must be green before the first
    task.
 5. Replace the project name and description in `README.md`; keep the
-   example (`catalog` and `orders`, `hello` and `greetings`) until the
-   first real module exists.
+   example (`catalog` and `orders`) until the first real module exists.
 
 ## Repository map
 
@@ -60,7 +59,7 @@ all of them, including the GitHub settings):
 | `proto/` | gRPC contracts, the single source of truth between services |
 | `contracts/` | Rust crate with the code generated from `proto/`; every Rust service depends on it |
 | `services/core/` | the monolith: every module, the public HTTP API, admin, its database |
-| `services/<name>/` | modules extracted into Rust services (`hello` is the example) |
+| `services/<name>/` | modules extracted into Rust services; none until a module has to leave |
 | `tools/eo-lint/` | Elegant Objects linter for Rust |
 | `scripts/` | code generation, end-to-end check, checks and agent hooks |
 | `docs/` | architecture, Elegant Objects, TDD, patterns registry, cookbook |
@@ -131,11 +130,12 @@ monolith was built for it, so every module is kept ready to leave.
 | `core` | Python, Django | the monolith: every module, the only public HTTP API, auth, admin |
 | `db` | — | PostgreSQL of `core` |
 | `core-relay` | Python, Django | the same image as `core`: delivers events from the outbox after commit |
-| `<name>` | Rust | a module extracted into its own service; `hello` is the example |
+| `<name>` | Rust | a module extracted into its own service |
 | `nats` | — | message broker, from the first extracted service on |
 
-Until the example is replaced, `hello`, `nats` and `core-events` (the same
-image as `core`, consuming NATS) run next to `core` as an extracted service.
+The template runs only `core`, `core-relay` and `db`. The Rust workspace,
+`eo-lint`, the `contracts` crate and buf stay ready and checked in CI with
+no service, so the first module that leaves starts from green tooling.
 
 Modules of the monolith:
 
@@ -617,7 +617,7 @@ has no failing test behind it; if it blocks, write the test.
 | Level | Python (`core`) | Rust | Runs in |
 |-------|-----------------|------|---------|
 | Unit | `services/core/tests/`, mirrors `server/` | `#[cfg(test)] mod tests` next to the code | `make core`, `make rust` |
-| Integration | real fakes: an in-process gRPC server; PostgreSQL and NATS from the Compose file of `core` | `tests/` of the crate; NATS and PostgreSQL in Docker (testcontainers) | same |
+| Integration | PostgreSQL from the Compose file of `core`; an in-process fake gRPC server and NATS once a service is extracted | `tests/` of the crate; NATS and PostgreSQL in Docker (testcontainers) | same |
 | API contract | schemathesis + tracecov against the OpenAPI schema | — | `make core` |
 | End-to-end | `scripts/e2e.sh` through every service | same | `make e2e` |
 | Mutation | mutmut | cargo-mutants | `make mutants` |
@@ -713,12 +713,11 @@ Step-by-step recipes live in `docs/cookbook.md` (`/cookbook`); in short:
 **Extract a module into a service** (only when a split criterion of
 "Architecture" holds, and after the human agrees)
 1. Contract first: `proto/<name>/v1/<name>.proto` from the public package
-   of the module, compiled in `contracts/build.rs` and exposed in
-   `contracts/src/lib.rs`.
+   of the module; the `contracts` crate compiles every `.proto` by
+   itself.
 2. `services/<name>/` with `src/domain/`, `src/infra/`, `src/api/`,
    `src/main.rs`, its own database; add it to the workspace `members`, a
-   `Dockerfile` like `services/hello/Dockerfile` and a service with a
-   health check in `compose.yml`.
+   `Dockerfile` and a service with a health check in `compose.yml`.
 3. Strangler Fig: in `core`, `make proto`, then switch the adapters behind
    the facade to gRPC one operation at a time, events from the outbox to
    NATS; delete the module from `core` when nothing goes through it.
@@ -731,9 +730,9 @@ Step-by-step recipes live in `docs/cookbook.md` (`/cookbook`); in short:
 **Fix a bug**
 1. A test that reproduces the bug (red), then the fix (green).
 
-**Remove the example** (`catalog`, `orders`, `hello`, `greetings`), once
-the first real module exists, in its own pull request: modules, services,
-contracts, generated code, tests, Compose entries, `docs/patterns.md`.
+**Remove the example** (`catalog`, `orders`), once the first real module
+exists, in its own pull request: modules, their composition, tests, the
+requests of `scripts/e2e.sh`, `docs/patterns.md`.
 
 ## Migrations
 
@@ -889,7 +888,7 @@ merged (`git worktree remove`).
   `<type>(<scope>): <description>`.
   - types: `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `build`,
     `ci`, `chore`, `style`, `revert`;
-  - scope: the service, app or area: `core`, `hello`, `greetings`,
+  - scope: the service, app or area: `core`, `catalog`, `orders`,
     `eo-lint`, `proto`, `deps`, `ci`;
   - description: imperative mood, lowercase, no trailing period, the whole
     line within 100 characters;
