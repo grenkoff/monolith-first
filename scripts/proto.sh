@@ -10,7 +10,7 @@ out="$root/services/core/server/contracts"
 rm -rf "$out"
 mkdir -p "$out"
 
-uvx --from 'grpcio-tools==1.85.*' --with 'mypy-protobuf==5.*' \
+uvx --from 'grpcio-tools==1.85.1' --with 'mypy-protobuf==5.1.0' \
   python -m grpc_tools.protoc \
   --proto_path="$root/proto" \
   --python_out="$out" \
