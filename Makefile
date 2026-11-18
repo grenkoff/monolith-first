@@ -6,6 +6,8 @@ PYTHON_VERSION := $(shell cat $(CORE)/.python-version)
 POETRY_VERSION := $(shell sed -n "s/.*POETRY_VERSION=\([0-9.]*\).*/\1/p" $(CORE)/docker/django/Dockerfile)
 RUST_COVERAGE_IGNORE := '(^|/)(main|build)\.rs$$'
 GENERATED := $(CORE)/server/contracts docs/patterns.md
+CONTRACTS := $(shell find proto -name '*.proto' 2>/dev/null)
+DEVELOP_CONTRACTS := $(shell git ls-tree -r --name-only origin/develop -- proto 2>/dev/null | grep '\.proto$$')
 
 .PHONY: help
 help:
@@ -51,13 +53,17 @@ env:
 
 .PHONY: proto
 proto:
+ifneq ($(CONTRACTS),)
 	buf lint
 	buf format --diff --exit-code
+endif
 	./scripts/proto.sh
 
 .PHONY: contracts
 contracts: proto patterns
+ifneq ($(and $(CONTRACTS),$(DEVELOP_CONTRACTS)),)
 	buf breaking --against "$$(git rev-parse --path-format=absolute --git-common-dir)#ref=origin/develop"
+endif
 	git add --intent-to-add $(GENERATED)
 	git diff --exit-code -- $(GENERATED)
 

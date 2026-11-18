@@ -10,14 +10,18 @@ out="$root/services/core/server/contracts"
 rm -rf "$out"
 mkdir -p "$out"
 
-uvx --from 'grpcio-tools==1.85.1' --with 'mypy-protobuf==5.1.0' \
-  python -m grpc_tools.protoc \
-  --proto_path="$root/proto" \
-  --python_out="$out" \
-  --mypy_out="$out" \
-  --grpc_python_out="$out" \
-  --mypy_grpc_out="$out" \
-  $(cd "$root/proto" && find . -name '*.proto' -printf '%P\n' | sort)
+contracts="$(cd "$root/proto" && find . -name '*.proto' -printf '%P\n' | sort)"
+
+if [[ -n "$contracts" ]]; then
+  uvx --from 'grpcio-tools==1.85.1' --with 'mypy-protobuf==5.1.0' \
+    python -m grpc_tools.protoc \
+    --proto_path="$root/proto" \
+    --python_out="$out" \
+    --mypy_out="$out" \
+    --grpc_python_out="$out" \
+    --mypy_grpc_out="$out" \
+    $contracts
+fi
 
 find "$out" -name '*.py' -o -name '*.pyi' | while read -r file; do
   sed -i -E 's/^from ([a-z_]+)\.(v[0-9]+) import/from server.contracts.\1.\2 import/; s/^import ([a-z_]+)\.(v[0-9]+)\.([a-z_0-9]+)$/import server.contracts.\1.\2.\3/' "$file"
