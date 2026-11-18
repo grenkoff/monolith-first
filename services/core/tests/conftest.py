@@ -6,6 +6,4 @@ pytest_plugins = [
     'plugins.tracecov_map',
     'plugins.hypothesis_profiles',
     # TODO: add your own plugins here!
-    'plugins.greetings.hello_server',
-    'plugins.greetings.nats_events',
 ]

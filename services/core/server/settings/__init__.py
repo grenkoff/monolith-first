@@ -19,7 +19,6 @@ _base_settings = (
     'components/csp.py',
     'components/caches.py',
     'components/api.py',
-    'components/services.py',
     'components/outbox.py',
     # Select the right env:
     f'environments/{_ENV}.py',
