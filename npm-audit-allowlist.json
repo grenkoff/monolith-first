@@ -1,0 +1,8 @@
+[
+  {
+    "advisory": "GHSA-fc5q-39xc-vjpf",
+    "package": "picomatch",
+    "added": "2026-11-18",
+    "reason": "No fixed version exists; picomatch comes only with the @nizos/probity hook, which matches the paths of our own files against the globs of probity.config.ts and never runs in the system"
+  }
+]

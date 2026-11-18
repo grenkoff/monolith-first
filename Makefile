@@ -86,7 +86,7 @@ rust:
 security: env
 	gitleaks git --no-banner --redact .
 	cargo deny --locked check advisories
-	npm audit
+	node scripts/npm-audit.mjs
 	cd $(CORE) && $(COMPOSE) build web && \
 	  $(COMPOSE) run --rm --no-deps web pip-audit --desc
 

@@ -793,6 +793,11 @@ Machine-enforced: `django-migration-linter` (`lintmigrations`) and
     depends on it directly; deeper in the tree we cannot replace it.
   - Duplicate versions of a Rust crate are reported, not blocking: they
     come from upstream crates and cost build time, not safety.
+  - `npm audit` runs through `scripts/npm-audit.mjs`: an advisory with no
+    fixed version in a tool that never runs in the system may go to
+    `npm-audit-allowlist.json` with its reason, only after the human
+    agrees; the script fails once an allowed advisory is no longer
+    reported, so the entry is removed as soon as a fix arrives.
 - **Containers**: run as a non-root user, base images pinned to a version
   tag and updated by Dependabot.
 
