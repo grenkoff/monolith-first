@@ -171,6 +171,353 @@ sale.
    already seen.
 6. `make e2e` proves the event travels through every service.
 
+## Extract a module into a service
+
+Only when a split criterion of `AGENTS.md` holds and the human agreed;
+name the criterion in the Issue. The module leaves by Strangler Fig: a
+service grows next to `core`, the facade of the module switches to it one
+operation at a time, and the old code goes only when nothing reaches it.
+Each step below is a pull request of its own and leaves the system
+working, so the extraction can stop or roll back at any step.
+
+Example: `catalog` leaves the monolith; `orders` keeps asking the
+`Catalog` facade for prices and never learns where the answer comes from.
+
+### 1. Make sure the module is ready to leave
+
+- Other modules reach it only through its `public/` package, from their
+  `infra/` adapters (`CatalogPrices`); `make architecture` is green.
+- What other modules need from it comes through the facade or its events;
+  nothing reads its tables or joins them.
+- Fix what fails inside the monolith first: extraction does not repair
+  boundaries, it freezes them.
+
+### 2. Contract from the public package
+
+`proto/catalog/v1/catalog.proto` maps the public package one to one:
+
+| `public/` of the module | `proto/` |
+|-------------------------|----------|
+| facade `Catalog` | `service CatalogService` |
+| method `product(identifier)` | `rpc Product(ProductRequest) returns (ProductResponse)` |
+| transfer object `Product` | `message Product`, a UUID as `string` |
+| `UnknownProductError` | status `NOT_FOUND` |
+| a fact the module publishes or consumes (`OrderPlaced`) | a message named as the fact, subject `orders.v1.order_placed` |
+
+`make proto` checks it with buf and generates the Python code; commit
+`services/core/server/contracts/` with the `.proto` file. The `contracts`
+crate compiles it by itself. From now on `make contracts` runs
+`buf breaking` against `develop`.
+
+### 3. The service, without traffic
+
+Follow "Add a Rust service". Add what the service needs to
+`[workspace.dependencies]` once, with `cargo add` versions: `tokio`,
+`tonic`, `axum`, `async-nats`, `sqlx` (features `postgres`,
+`runtime-tokio`, `macros`, `uuid`), `tracing`, `tracing-subscriber`
+(`json`, `env-filter`), `thiserror`, `anyhow`, `contracts = { path =
+"contracts" }`, and `testcontainers-modules` (`nats`, `postgres`) for
+tests. They are the agreed stack; show the list to the human anyway.
+
+`main.rs` is the composition root: it reads settings, connects with a
+timeout, serves gRPC and the health check, and stops on a signal. A secret
+such as `DATABASE_URL` has no default: the service fails at start without
+it.
+
+```rust
+//! Entry point of the catalog service.
+
+use std::time::Duration;
+
+use catalog::api::endpoint::Products;
+use catalog::api::health::{Health, Routes};
+use catalog::infra::setting::{Env, Setting};
+use contracts::catalog::v1::catalog_service_server::CatalogServiceServer;
+use sqlx::postgres::PgPoolOptions;
+
+/// Composition root: wires the catalog service and serves gRPC and health checks.
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt().json().init();
+    let pool = PgPoolOptions::new()
+        .acquire_timeout(Duration::from_secs(Env::new("DATABASE_TIMEOUT", "5").value().parse()?))
+        .connect(&std::env::var("DATABASE_URL")?)
+        .await?;
+    sqlx::migrate!().run(&pool).await?;
+    let grpc = Env::new("CATALOG_GRPC_ADDR", "0.0.0.0:50051").value().parse()?;
+    let http = tokio::net::TcpListener::bind(Env::new("CATALOG_HTTP_ADDR", "0.0.0.0:8080").value())
+        .await?;
+    let stop = || async {
+        if let Err(error) = tokio::signal::ctrl_c().await {
+            tracing::error!(%error, "cannot listen for the shutdown signal");
+        }
+    };
+    tokio::try_join!(
+        async {
+            tonic::transport::Server::builder()
+                .add_service(CatalogServiceServer::new(Products::new(pool)))
+                .serve_with_shutdown(grpc, stop())
+                .await
+                .map_err(anyhow::Error::from)
+        },
+        async {
+            axum::serve(http, Health.router())
+                .with_graceful_shutdown(stop())
+                .await
+                .map_err(anyhow::Error::from)
+        },
+    )?;
+    Ok(())
+}
+```
+
+The health check is an object behind a trait, like everything else:
+
+```rust
+/// Health check that answers `ok` on `/health`.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Health;
+
+impl Routes for Health {
+    fn router(&self) -> Router {
+        Router::new().route("/health", get(|| async { "ok" }))
+    }
+}
+```
+
+`services/catalog/Dockerfile` builds the whole workspace context, because
+the crate needs `proto/` and `contracts/`:
+
+```dockerfile
+FROM rust:1-slim-bookworm AS build
+
+RUN apt-get update \
+  && apt-get install --no-install-recommends -y protobuf-compiler \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /src
+COPY Cargo.toml Cargo.lock ./
+COPY proto ./proto
+COPY contracts ./contracts
+COPY tools ./tools
+COPY services/catalog ./services/catalog
+
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+  --mount=type=cache,target=/src/target \
+  cargo build --release --locked -p catalog \
+  && cp target/release/catalog /usr/local/bin/catalog
+
+
+FROM debian:bookworm-slim AS runtime
+
+RUN apt-get update \
+  && apt-get install --no-install-recommends -y ca-certificates curl \
+  && rm -rf /var/lib/apt/lists/* \
+  && useradd --system --uid 1000 catalog
+
+COPY --from=build /usr/local/bin/catalog /usr/local/bin/catalog
+
+USER catalog
+EXPOSE 50051 8080
+HEALTHCHECK --interval=5s --timeout=3s --retries=10 \
+  CMD curl -fsS http://localhost:8080/health || exit 1
+ENTRYPOINT ["catalog"]
+```
+
+Add its directory to the `docker` entry of `.github/dependabot.yml`.
+
+In `compose.yml`: the service, its own database, and NATS with JetStream.
+None of them publishes ports; `core` reaches the service by its name.
+Passwords come from `services/catalog/config/.env`, created from a
+committed `config/.env.template` with placeholders by the `env` target of
+the `Makefile`, extended like the line of `core`.
+
+```yaml
+  nats:
+    image: "nats:2-alpine"
+    restart: unless-stopped
+    logging: *logging
+    command: ["--jetstream", "--http_port", "8222"]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8222/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  catalog-db:
+    image: "postgres:18-alpine"
+    restart: unless-stopped
+    logging: *logging
+    env_file: ./services/catalog/config/.env
+    volumes:
+      - catalog-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 30s
+      retries: 5
+
+  catalog:
+    build:
+      context: .
+      dockerfile: ./services/catalog/Dockerfile
+    image: "catalog:dev"
+    restart: unless-stopped
+    logging: *logging
+    env_file: ./services/catalog/config/.env
+    environment:
+      NATS_URL: nats://nats:4222
+      RUST_LOG: info
+    depends_on:
+      catalog-db:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+```
+
+with `catalog-data:` under `volumes:`. `core` gets `CATALOG_GRPC_ADDR: catalog:50051` and `NATS_URL:
+nats://nats:4222` in its environment and waits for both with
+`condition: service_healthy`. `make architecture` checks that only `core`
+publishes ports and that each database serves one deployable.
+
+The schema of the service starts as a copy of the tables of the module, in
+plain SQL (`sqlx migrate add`, see "Add a model and a migration"). Red,
+green and refactor as usual: the domain in `src/domain/` at 100% coverage,
+the endpoint in `src/api/`, queries in `src/infra/` with `sqlx::query!`.
+
+### 4. Copy the data and keep the copy in sync
+
+`core` stays the source of truth during this step; the service only
+follows it.
+
+1. Every change of the tables of the module already writes an event to
+   the outbox; add the missing ones inside the monolith first
+   (`ProductAdded`, `ProductRepriced`), each with a test.
+2. `core` publishes these topics to NATS. A subscriber of the relay in
+   `server/common/outbox/` sends the payload of the event as the protobuf
+   message of the contract to JetStream, with the event id as
+   `Nats-Msg-Id` and a timeout from settings, and registers for each topic
+   in `server/composition/outbox.py`. It publishes while the relay holds
+   the lock of that one outbox row, the only network call allowed inside a
+   transaction (see "Data integrity" in `AGENTS.md`); a repeat after a
+   failed commit is dropped by JetStream deduplication.
+3. The service keeps a stream for its subjects and a durable consumer, and
+   writes its copy idempotently: the event id is written in the same
+   transaction as the change, and an id it has seen is skipped.
+4. Existing rows: a management command of the module in `core` writes one
+   event per row to the outbox, so old and new data reach the service
+   along one path.
+
+`make e2e` checks that a product added through `core` appears in the
+service.
+
+### 5. Switch reads, one operation at a time
+
+1. An adapter of the facade in `server/apps/catalog/infra/remote.py`
+   implements `Catalog` over gRPC: the address and the timeout come from
+   settings (`CATALOG_GRPC_ADDR`, `CATALOG_GRPC_TIMEOUT` in
+   `server/settings/components/services.py` and `config/.env.template`),
+   and status codes become the errors of `public/`.
+
+   ```python
+   @final
+   @attrs.define(slots=True, frozen=True)
+   class RemoteCatalog:
+       """Adapter: asks the catalog service for products over gRPC."""
+
+       _settings: LazySettings
+
+       def product(self, identifier: UUID) -> Product:
+           """Returns the product with the id or raises UnknownProductError."""
+           with grpc.insecure_channel(self._settings.CATALOG_GRPC_ADDR) as channel:
+               try:
+                   found = catalog_pb2_grpc.CatalogServiceStub(channel).Product(
+                       catalog_pb2.ProductRequest(id=str(identifier)),
+                       timeout=self._settings.CATALOG_GRPC_TIMEOUT,
+                   )
+               except grpc.RpcError as exc:
+                   if exc.code() == grpc.StatusCode.NOT_FOUND:
+                       raise UnknownProductError(identifier) from exc
+                   raise CatalogUnavailableError(str(exc)) from exc
+           return Product(
+               id=UUID(found.product.id),
+               name=found.product.name,
+               price_cents=found.product.price_cents,
+               sold=found.product.sold,
+           )
+   ```
+
+   `grpcio` and `protobuf` join the dependencies of `core` (`poetry add`,
+   with `types-grpcio` and `types-protobuf` in the dev group), after the
+   human agrees. An unavailable service is an error of `public/` too
+   (`CatalogUnavailableError`), which the HTTP API of each caller answers
+   with 503.
+2. Its tests run against an in-process fake of the service in
+   `tests/plugins/catalog/`: a servicer that answers like the real one,
+   served on a free local port, with fixtures that point the settings at
+   it, at a slow one and at a closed port.
+
+   ```python
+   @contextmanager
+   def _serving(servicer: catalog_pb2_grpc.CatalogServiceServicer) -> Generator[str]:
+       """Serves a fake catalog service on a free local port."""
+       server = grpc.server(futures.ThreadPoolExecutor(max_workers=2))
+       catalog_pb2_grpc.add_CatalogServiceServicer_to_server(servicer, server)
+       port = server.add_insecure_port('127.0.0.1:0')
+       server.start()
+       try:
+           yield f'127.0.0.1:{port}'
+       finally:
+           server.stop(grace=_GRACE).wait()
+   ```
+
+3. `server/composition/catalog.py` binds the facade to `RemoteCatalog`.
+   When the facade has more than one operation, an object that implements
+   it takes each operation from either the stored or the remote
+   implementation, and the next pull request moves the next operation.
+4. `make e2e`: an order placed through `core` now prices its product
+   through the service.
+
+### 6. Switch writes
+
+1. One deploy per write operation: the use case of `core` calls the
+   service, and from that deploy on the service owns the data of that
+   operation. `core` stops writing those rows; the events of step 4 for
+   them stop with it.
+2. The service publishes its facts itself, only after `commit()`, to
+   JetStream with the event id as `Nats-Msg-Id` (see "Add an event of an
+   extracted service").
+3. Subscribers of the module inside `core` move with it: the service
+   consumes `orders.v1.order_placed` from NATS instead of `RecordedSales`,
+   and the topic gets the NATS subscriber of step 4 in
+   `server/composition/outbox.py`.
+4. Modules of `core` that react to the facts of the service get a
+   consumer: a management command with a durable JetStream consumer, its
+   own Compose service built from the image of `core`, idempotent by
+   event id.
+
+### 7. Delete the module from `core`
+
+When nothing goes through its local code any more:
+
+1. One pull request deletes `logic/`, the stored implementations in
+   `infra/`, `admin.py`, the subscribers and their tests. The module keeps
+   `public/`, `infra/remote.py` and `api/`: only `core` is public, so the
+   HTTP API of the module stays in `core` and calls the service through
+   the facade.
+2. A second pull request, opened as a draft and made ready only after the
+   first one is in production, drops the tables of the module (a contract
+   migration, see "Migrations" in `AGENTS.md`).
+3. `make patterns`, `docs/architecture.md`, `README.md` and the process
+   table of `AGENTS.md` describe the new service.
+
+### 8. Checks at every step
+
+`make contracts` (buf breaking), `make architecture` (ports, databases,
+calls between modules), `make rust` and `make mutants` (the service at
+100% in `src/domain/`, zero surviving mutants), `make core`, and
+`make e2e` with a request that goes through the service.
+
 ## Add a model and a migration
 
 Django:
