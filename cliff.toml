@@ -2,10 +2,9 @@
 header = """
 # Changelog
 
-Every release of this project, built by `make changelog` from Conventional Commits.
-
-"""
+Every release of this project, built by `make changelog` from Conventional Commits."""
 body = """
+
 {% if version %}\
 ## {{ version }}
 {% else %}\
@@ -20,7 +19,8 @@ body = """
 {% endfor %}
 {% endfor %}
 """
-trim = true
+trim = false
+postprocessors = [{ pattern = '\n+\z', replace = "\n" }]
 
 [git]
 conventional_commits = true
