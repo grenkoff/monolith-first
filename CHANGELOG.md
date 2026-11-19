@@ -2,6 +2,85 @@
 
 Every release of this project, built by `make changelog` from Conventional Commits.
 
+## v2026.11.19
+
+### Features
+
+- **core**: Report a call chain between modules
+- **core**: Report modules named after a technical layer
+- **core**: Report model relations between modules
+- **core**: Report a call to another module inside a transaction
+- **core**: Report compose services that face the world or share a database
+- **eo-lint**: Reject grpc clients in services
+- **core**: Report models without a uuid7 primary key
+- **main**: Give blog posts uuid7 ids
+- **accounts**: Give users uuid7 ids in their own model
+- **catalog**: Keep products with uuid7 ids in the catalog
+- **catalog**: Show products by id behind the catalog facade
+- **catalog**: Accept only visible names and prices up to a million
+- **orders**: Total an order from the current price of its product
+- **orders**: Place orders through the catalog facade
+- **orders**: Answer 409 for products not on sale and limit quantities
+- **orders**: Show orders by id
+- **core**: Count a subscription to the events of a module as no call
+- **orders**: Write an order placed event to the outbox with the order
+- **core**: Relay the oldest pending outbox event to its subscribers
+- **catalog**: Record each placed order as a sale of its product
+- **core**: Relay outbox events in a command that drains the outbox on sigterm
+- **core**: Poll the relay and wait only while no event is pending
+- **core**: **breaking**: Remove the hello example service and its greetings client
+
+### Bug fixes
+
+- **core**: Accept relations from framework models to modules
+- **core**: Read whole floats in request bodies as integers
+- **catalog**: Record a sale once however often its event is delivered
+
+### Refactoring
+
+- **core**: Share the reading of import statements between the checks
+- **core**: Build module objects in the composition root by hand
+- **core**: Share the pattern of visible text between modules
+- **core**: Remove the main example with its migration-linter exceptions
+- **core**: Build the catalog facade once and hand it to orders
+- **core**: Wire each module in a file of its own under the composition root
+- **core**: Run the relay command on the polling loop
+
+### Dependencies
+
+- **deps**: Bump python from 3.14.9 to 3.14.10 (#49)
+- **deps**: Bump prost from 0.14.4 to 0.14.6 and syn from 3.0.9 to 3.0.10 (#51)
+
+### Documentation
+
+- Make the template a modular monolith that extracts services when needed
+- Make the public package the innermost layer of a module
+- Describe the checks that keep out the distributed monolith
+- Name the user model and the check of uuid7 primary keys
+- Describe catalog and orders as the example of modules
+- Register the catalog facade and its adapter in the patterns registry
+- Describe the outbox, its relay and the composition of modules
+- Register the sales observer in the patterns registry
+- Describe the monolith without the example service
+- Add the recipe that extracts a module by strangler fig
+
+### Build
+
+- **core**: Let the infra of a module import only the public package of another
+- **core**: Let ruff read the model _meta api of django
+- Pin the generators of the python contracts to exact versions
+- Run the outbox relay in compose and check it end to end
+- **contracts**: Generate code for every contract in proto
+- **proto**: Skip buf and code generation when proto holds no contract
+- Separate the releases of the changelog with a blank line
+
+### CI
+
+- Check in its own job that no distributed monolith appears
+- Check uuid7 primary keys with the architecture
+- Allow listed npm advisories that have no fix and never reach the system
+- Drop the picomatch advisory that npm audit no longer reports
+
 ## v2026.11.14
 
 ### Features
