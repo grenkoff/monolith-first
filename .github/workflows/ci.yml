@@ -70,13 +70,22 @@ jobs:
   tooling:
     name: Tooling (hooks, duplicates)
     runs-on: ubuntu-latest
+    env:
+      BIOME_VERSION: 2.6.5
+      BIOME_SHA256: 0653fd798e50565efac8b1958c9a2786fada55cc6c362b7da4f16efff8dd30d8
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
       - name: Install toolchain from rust-toolchain.toml
         run: rustup show active-toolchain || rustup toolchain install
       - uses: Swatinem/rust-cache@v2
+      - name: Install Biome
+        run: |
+          curl -sSfL -o biome "https://github.com/biomejs/biome/releases/download/%40biomejs%2Fbiome%40$BIOME_VERSION/biome-linux-x64"
+          echo "$BIOME_SHA256  biome" | sha256sum --check
+          sudo install biome /usr/local/bin/biome
       - run: make hooks
+      - run: make js
       - run: make duplicates
 
   contracts:
@@ -163,6 +172,8 @@ jobs:
         run: make up
       - name: Request goes through every service
         run: ./scripts/e2e.sh
+      - name: Web components work in a browser
+        run: make browser
       - name: Logs
         if: failure()
         run: docker compose logs --tail 100
