@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from typing import final
 
 import attrs
+import ranking
 
 
 @final
@@ -13,4 +14,4 @@ class RustSimilarity:
 
     def scores(self, query: str, names: Sequence[str]) -> list[float]:
         """Returns the resemblance of each name to the query, in the order given."""
-        return [float(len(query)) for _ in names[:0]]
+        return ranking.Similarity(query)(list(names))

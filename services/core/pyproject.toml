@@ -350,7 +350,7 @@ strict_settings = false
 # Deptry: https://deptry.com/usage/
 [tool.deptry]
 # Local application package; imports like `from server...` are first-party.
-known_first_party = ["server"]
+known_first_party = ["server", "ranking"]
 
 [tool.deptry.per_rule_ignores]
 # Used via Django settings / deploy

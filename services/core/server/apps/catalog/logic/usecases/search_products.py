@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import operator
 from typing import TYPE_CHECKING, final
 
 import attrs
+
+from server.apps.catalog.logic.constants import RESEMBLANCE_MIN
 
 if TYPE_CHECKING:
     from server.apps.catalog.logic.products import Products
@@ -22,4 +25,16 @@ class SearchProducts:
 
     def __call__(self, query: str) -> list[Product]:
         """Returns the products that resemble the query enough."""
-        return self._products.on_sale()[:0] if query else []
+        if not query.strip():
+            return []
+        products = self._products.on_sale()
+        scores = self._similarity.scores(
+            query,
+            [product.name for product in products],
+        )
+        ranked = sorted(
+            zip(scores, products, strict=True),
+            key=operator.itemgetter(0),
+            reverse=True,
+        )
+        return [product for score, product in ranked if score >= RESEMBLANCE_MIN]

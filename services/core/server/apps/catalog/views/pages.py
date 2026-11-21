@@ -7,7 +7,11 @@ from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.views import View
 
-from server.apps.catalog.logic.usecases import find_product, list_products
+from server.apps.catalog.logic.usecases import (
+    find_product,
+    list_products,
+    search_products,
+)
 from server.apps.catalog.public.products import UnknownProductError
 from server.common.di import HasContainer
 from server.common.money import Cents
@@ -54,4 +58,15 @@ class Search(HasContainer, View):
 
     def get(self, request: HttpRequest) -> HttpResponse:
         """Renders the form and the products that resemble the query."""
-        return HttpResponse(request.path)
+        query = request.GET.get('q', '')
+        products = self.resolve(search_products.SearchProducts)(query)
+        return render(
+            request,
+            'catalog/search.html',
+            {
+                'query': query,
+                'products': [
+                    (product, Cents(product.price_cents)) for product in products
+                ],
+            },
+        )
