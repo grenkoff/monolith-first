@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, final
 
 import attrs
 
+from server.apps.catalog.logic.constants import THUMBNAIL_WIDTH
 from server.apps.catalog.logic.value_objects import PhotoSize
 
 if TYPE_CHECKING:
@@ -27,4 +28,7 @@ class AttachPhoto:
 
     def __call__(self, product: UUID, upload: PhotoUpload) -> PhotoSize:
         """Returns the size of the thumbnail kept for the product."""
-        return PhotoSize(width=len(upload.image), height=1)
+        self._catalog.product(product)
+        thumbnail = self._thumbnails.made(upload.photo(), THUMBNAIL_WIDTH)
+        self._photos.keep(product, thumbnail)
+        return PhotoSize(width=thumbnail.width, height=thumbnail.height)

@@ -6,6 +6,13 @@
 {% endblock scripts %}
 {% block content %}
   <h1 class="ds-heading mb-2">{{ product.name }}</h1>
+  {% if product.id in photographed %}
+    <img
+      src="{% url 'catalog:thumbnail' identifier=product.id %}"
+      alt="{{ product.name }}"
+      class="mb-6 w-full max-w-md rounded-card"
+    >
+  {% endif %}
   <p class="ds-price mb-6">{{ price }}</p>
   <site-total price-cents="{{ product.price_cents }}">
     <form

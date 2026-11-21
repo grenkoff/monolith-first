@@ -27,4 +27,4 @@ class FindPhoto:
 
     def shown(self, products: Sequence[UUID]) -> frozenset[UUID]:
         """Returns those of the products that have a thumbnail."""
-        return frozenset(products[:0])
+        return self._photos.shown(products)

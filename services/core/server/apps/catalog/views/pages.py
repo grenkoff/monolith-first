@@ -7,7 +7,9 @@ from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.views import View
 
+from server.apps.catalog.logic.photos import UnknownPhotoError
 from server.apps.catalog.logic.usecases import (
+    find_photo,
     find_product,
     list_products,
     search_products,
@@ -24,6 +26,9 @@ class Home(HasContainer, View):
     def get(self, request: HttpRequest) -> HttpResponse:
         """Renders the products on sale with their prices."""
         products = self.resolve(list_products.ListProducts)()
+        photographed = self.resolve(find_photo.FindPhoto).shown(
+            [product.id for product in products],
+        )
         return render(
             request,
             'catalog/home.html',
@@ -31,6 +36,7 @@ class Home(HasContainer, View):
                 'products': [
                     (product, Cents(product.price_cents)) for product in products
                 ],
+                'photographed': photographed,
             },
         )
 
@@ -48,7 +54,13 @@ class ProductPage(HasContainer, View):
         return render(
             request,
             'catalog/product.html',
-            {'product': product, 'price': Cents(product.price_cents)},
+            {
+                'product': product,
+                'price': Cents(product.price_cents),
+                'photographed': self.resolve(find_photo.FindPhoto).shown(
+                    [product.id],
+                ),
+            },
         )
 
 
@@ -78,4 +90,8 @@ class ProductThumbnail(HasContainer, View):
 
     def get(self, request: HttpRequest, identifier: UUID) -> HttpResponse:
         """Answers the thumbnail of the product in the path, or 404."""
-        return HttpResponse(request.path + str(identifier))
+        try:
+            thumbnail = self.resolve(find_photo.FindPhoto)(identifier)
+        except UnknownPhotoError as exc:
+            raise Http404(str(identifier)) from exc
+        return HttpResponse(thumbnail.image, content_type='image/jpeg')
