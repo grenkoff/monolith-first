@@ -72,7 +72,8 @@ all of them, including the GitHub settings):
 | `contracts/` | Rust crate with the code generated from `proto/`; every Rust service depends on it |
 | `services/core/` | the monolith: every module, the public HTTP API, admin, its database |
 | `services/core/native/` | Rust extension module of `core` (PyO3, maturin): the resemblance of names behind the catalog search |
-| `services/<name>/` | modules extracted into Rust services; none until a module has to leave |
+| `services/images/` | the example of an extracted Rust service: thumbnails of photos over gRPC |
+| `services/<name>/` | modules extracted into Rust services, when a split criterion holds |
 | `tools/eo-lint/` | Elegant Objects linter for Rust |
 | `tools/commit-lint/` | checks commit messages: Conventional Commits, one line |
 | `tools/clones/` | finds blocks of Python and Rust code repeated in the repository |
@@ -150,12 +151,17 @@ monolith was built for it, so every module is kept ready to leave.
 | `db` | — | PostgreSQL of `core` |
 | `core-relay` | Python, Django | the same image as `core`: delivers events from the outbox after commit |
 | `core-css` | Tailwind CLI | the same image as `core`: rebuilds the stylesheet while the system runs locally |
+| `images` | Rust | the example service: makes thumbnails of photos for `core` over gRPC |
 | `<name>` | Rust | a module extracted into its own service |
 | `nats` | — | message broker, from the first extracted service on |
 
-The template runs only `core`, `core-relay`, `core-css` and `db`. The Rust workspace,
-`eo-lint`, the `contracts` crate and buf stay ready and checked in CI with
-no service, so the first module that leaves starts from green tooling.
+The template runs `core`, `core-relay`, `core-css`, `db` and one example
+service, `images`: image processing needs another stack for heavy
+computation and far more CPU and memory than the rest of the site, two of
+the split criteria below. It owns no data and publishes no events, so it
+needs neither a database nor NATS; `core` calls it over gRPC
+(`proto/images/v1`) and keeps the thumbnails in its own tables. Keep it as
+a reference or delete it with the example, like `catalog` and `orders`.
 
 Modules of the monolith:
 
