@@ -1,5 +1,13 @@
 //! A commit message and the rules it breaks.
 
+/// Types of Conventional Commits the project allows.
+const TYPES: &[&str] = &[
+    "feat", "fix", "refactor", "perf", "test", "docs", "build", "ci", "chore", "style", "revert",
+];
+
+/// Longest header allowed, in characters.
+const LIMIT: usize = 100;
+
 /// Text that can be checked against the commit rules.
 pub trait Checked {
     /// Returns what breaks the rules, empty when nothing does.
@@ -22,7 +30,115 @@ impl Message {
 
 impl Checked for Message {
     fn problems(&self) -> Vec<String> {
-        Vec::from([self.text.clone()]).into_iter().take(0).collect()
+        let mut lines = self.text.trim_end().lines();
+        let mut problems = Header::new(lines.next().unwrap_or_default()).problems();
+        if lines.any(|line| !line.trim().is_empty()) {
+            problems.push(String::from(
+                "a message is one line only: no body, no footer",
+            ));
+        }
+        problems
+    }
+}
+
+/// First line of a message: `<type>(<scope>)!: <description>`.
+struct Header<'text> {
+    /// Text of the line.
+    text: &'text str,
+}
+
+impl<'text> Header<'text> {
+    /// Creates a header from its line.
+    const fn new(text: &'text str) -> Self {
+        Self { text }
+    }
+}
+
+impl Checked for Header<'_> {
+    fn problems(&self) -> Vec<String> {
+        let mut problems = Vec::new();
+        let length = self.text.chars().count();
+        if length > LIMIT {
+            problems.push(format!(
+                "the header has {length} characters, at most {LIMIT}"
+            ));
+        }
+        match self.text.split_once(": ") {
+            Some((prefix, description)) => {
+                problems.extend(Prefix::new(prefix).problems());
+                problems.extend(Description::new(description).problems());
+            }
+            None => problems.push(String::from(
+                "the header is not `<type>(<scope>): <description>`",
+            )),
+        }
+        problems
+    }
+}
+
+/// Part of a header before the colon: type, optional scope, optional `!`.
+struct Prefix<'text> {
+    /// Text of the part.
+    text: &'text str,
+}
+
+impl<'text> Prefix<'text> {
+    /// Creates a prefix from its text.
+    const fn new(text: &'text str) -> Self {
+        Self { text }
+    }
+}
+
+impl Checked for Prefix<'_> {
+    fn problems(&self) -> Vec<String> {
+        let plain = self.text.strip_suffix('!').unwrap_or(self.text);
+        let (kind, scope) = match plain.split_once('(') {
+            Some((kind, rest)) => (kind, rest.strip_suffix(')')),
+            None => (plain, Some("scope")),
+        };
+        let mut problems = Vec::new();
+        if !TYPES.contains(&kind) {
+            problems.push(format!("type `{kind}` is not one of {}", TYPES.join(", ")));
+        }
+        match scope {
+            Some(name) if !name.is_empty() && name == name.to_lowercase() => {}
+            Some(name) => {
+                problems.push(format!("scope `{name}` must be a non-empty lowercase name"));
+            }
+            None => problems.push(String::from("the scope has no closing `)`")),
+        }
+        problems
+    }
+}
+
+/// Part of a header after the colon.
+struct Description<'text> {
+    /// Text of the part.
+    text: &'text str,
+}
+
+impl<'text> Description<'text> {
+    /// Creates a description from its text.
+    const fn new(text: &'text str) -> Self {
+        Self { text }
+    }
+}
+
+impl Checked for Description<'_> {
+    fn problems(&self) -> Vec<String> {
+        let mut problems = Vec::new();
+        if self.text.trim().is_empty() {
+            problems.push(String::from("the description is empty"));
+        }
+        if self.text.starts_with(char::is_uppercase) {
+            problems.push(String::from(
+                "the description starts with a lowercase letter",
+            ));
+        }
+        if self.text.ends_with('.') {
+            problems.push(String::from("the description has no trailing period"));
+        }
+        problems
     }
 }
 
