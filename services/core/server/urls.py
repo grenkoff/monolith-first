@@ -73,8 +73,8 @@ urlpatterns = [
         name='v1_redoc',
     ),
     # Pages:
-    path('', include(catalog_page_urls)),
-    path('', include(orders_page_urls)),
+    path('', include((catalog_page_urls.urlpatterns, 'catalog'))),
+    path('', include((orders_page_urls.urlpatterns, 'orders'))),
     # Health checks:
     path(
         'health/',

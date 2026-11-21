@@ -4,8 +4,6 @@ from django.urls import path
 
 from server.apps.catalog.views import pages
 
-app_name = 'catalog'
-
 urlpatterns = [
     path('', pages.Home.as_view(), name='home'),
     path(
