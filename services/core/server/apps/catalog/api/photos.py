@@ -40,7 +40,8 @@ class ProductPhoto(
         ],
     )
     def put(
-        self, parsed_body: Body[value_objects.PhotoUpload],
+        self,
+        parsed_body: Body[value_objects.PhotoUpload],
     ) -> value_objects.PhotoSize:
         """Keeps the thumbnail of the photo for the product in the path."""
         return self.resolve(attach_photo.AttachPhoto)(self.kwargs['id'], parsed_body)

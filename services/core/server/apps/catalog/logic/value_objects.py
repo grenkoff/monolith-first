@@ -1,12 +1,14 @@
 """Value objects of the catalog."""
 
+import base64
 from typing import Annotated, final
 
 import msgspec
 
 from server.apps.catalog.logic.constants import (
+    BASE64,
     NAME_MAX_LENGTH,
-    PHOTO_MAX_BYTES,
+    PHOTO_MAX_BASE64,
     PRICE_MAX_CENTS,
 )
 from server.common.text import VISIBLE_CHARACTER
@@ -29,9 +31,16 @@ class ProductDraft(msgspec.Struct, frozen=True):
 
 @final
 class PhotoUpload(msgspec.Struct, frozen=True):
-    """Photo of a product to make a thumbnail of: JPEG, PNG or WebP bytes."""
+    """Photo of a product to make a thumbnail of: JPEG, PNG or WebP in base64."""
 
-    image: Annotated[bytes, msgspec.Meta(min_length=1, max_length=PHOTO_MAX_BYTES)]
+    image: Annotated[
+        str,
+        msgspec.Meta(min_length=4, max_length=PHOTO_MAX_BASE64, pattern=BASE64),
+    ]
+
+    def photo(self) -> bytes:
+        """Returns the bytes of the photo."""
+        return base64.b64decode(self.image)
 
 
 @final
