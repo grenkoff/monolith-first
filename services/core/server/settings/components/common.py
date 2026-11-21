@@ -127,6 +127,12 @@ STATICFILES_DIRS = (BASE_DIR.joinpath('server', 'common', 'django', 'static'),)
 
 SITE_NAME = config('DJANGO_SITE_NAME', default='Example shop')
 
+DATA_UPLOAD_MAX_MEMORY_SIZE = config(
+    'DJANGO_DATA_UPLOAD_MAX_MEMORY_SIZE',
+    cast=int,
+    default=12_582_912,
+)
+
 SITE_THEMES = ('classic', 'warm', 'bold')
 
 SITE_THEME = config(
