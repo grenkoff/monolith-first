@@ -60,7 +60,8 @@ _PAIRS: Final = (
     (_DANGER, _SURFACE),
 )
 _CHANNEL: Final = 255
-_LINEAR_EDGE: Final = 0.03928
+_LINEAR_EDGE: Final = 10
+_DIGITS: Final = 2
 _LINEAR_SLOPE: Final = 12.92
 _GAMMA_OFFSET: Final = 0.055
 _GAMMA_SCALE: Final = 1.055
@@ -133,16 +134,17 @@ class Colour(Shade):
     def luminance(self) -> float:
         """Returns the relative luminance of the colour."""
         channels = bytes.fromhex(self._hex[1:])
-        linear = (self._linear(channel / _CHANNEL) for channel in channels)
+        linear = (self._linear(channel) for channel in channels)
         return sum(
             weight * channel for weight, channel in zip(_WEIGHTS, linear, strict=True)
         )
 
-    def _linear(self, channel: float) -> float:
-        """Returns a channel from 0 to 1 converted from sRGB to linear light."""
+    def _linear(self, channel: int) -> float:
+        """Returns a channel from 0 to 255 converted from sRGB to linear light."""
+        share = channel / _CHANNEL
         if channel <= _LINEAR_EDGE:
-            return channel / _LINEAR_SLOPE
-        return float(((channel + _GAMMA_OFFSET) / _GAMMA_SCALE) ** _GAMMA)
+            return share / _LINEAR_SLOPE
+        return float(((share + _GAMMA_OFFSET) / _GAMMA_SCALE) ** _GAMMA)
 
 
 @final
@@ -170,7 +172,10 @@ class ThemeReport(Report):
         for text, background in _PAIRS:
             if text not in tokens or background not in tokens:
                 continue
-            ratio = Colour(tokens[text]).contrast(Colour(tokens[background]))
+            ratio = round(
+                Colour(tokens[text]).contrast(Colour(tokens[background])),
+                _DIGITS,
+            )
             if ratio < _READABLE:
                 yield (
                     f'theme {name}: {text} on {background} has contrast '
