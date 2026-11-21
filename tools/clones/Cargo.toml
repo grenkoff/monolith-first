@@ -1,0 +1,15 @@
+[package]
+name = "clones"
+version = "0.1.0"
+description = "Finds blocks of Python and Rust code repeated in the repository"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+walkdir.workspace = true
+
+[lints]
+workspace = true
