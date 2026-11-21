@@ -5,18 +5,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash scripts/probity-hook.sh --status"
+            "command": "bash scripts/tdd-hook.sh --status"
           }
         ]
       }
     ],
     "PreToolUse": [
       {
-        "matcher": "Bash|Write|Edit|NotebookEdit",
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
         "hooks": [
           {
             "type": "command",
-            "command": "bash scripts/probity-hook.sh --agent claude-code"
+            "command": "bash scripts/tdd-hook.sh"
           }
         ]
       }

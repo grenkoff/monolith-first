@@ -3,10 +3,9 @@
 set -o nounset
 set -o pipefail
 
-root="$(cd "$(dirname "$0")/.." && pwd)"
 tools=(
   docker make rustup cargo-llvm-cov cargo-mutants cargo-deny cargo-machete
-  protoc uv node npm buf gitleaks
+  protoc uv python3 buf gitleaks git-cliff
 )
 missing=0
 
@@ -31,14 +30,6 @@ if docker compose version >/dev/null 2>&1; then
   report 'docker compose v2' ok
 else
   report 'docker compose v2' 'docker compose version fails'
-fi
-
-wanted="$(cat "$root/.nvmrc")"
-actual="$(node --version 2>/dev/null || true)"
-if [[ "$actual" == "v$wanted."* ]]; then
-  report "node $wanted from .nvmrc" ok
-else
-  report "node $wanted from .nvmrc" "found ${actual:-none}, run nvm install"
 fi
 
 if [ "$missing" -gt 0 ]; then

@@ -8,12 +8,14 @@ RUST_COVERAGE_IGNORE := '(^|/)(main|build)\.rs$$'
 GENERATED := $(CORE)/server/contracts docs/patterns.md
 CONTRACTS := $(shell find proto -name '*.proto' 2>/dev/null)
 DEVELOP_CONTRACTS := $(shell git ls-tree -r --name-only origin/develop -- proto 2>/dev/null | grep '\.proto$$')
+LOCKED = $(shell grep -A1 '^name = "$(1)"' $(CORE)/poetry.lock | sed -n 's/^version = "\(.*\)"/\1/p')
+UVX := uvx -q --python $(PYTHON_VERSION)
 
 .PHONY: help
 help:
 	@printf '%s\n' \
 	  'make doctor        check that the required tools are installed' \
-	  'make setup         install Node tooling, the Rust toolchain and the core venv' \
+	  'make setup         install the Rust toolchain and the core venv' \
 	  'make env           create services/core/config/.env from the template' \
 	  'make proto         buf lint and format, regenerate Python gRPC code from proto/' \
 	  'make patterns      regenerate docs/patterns.md from the code' \
@@ -23,8 +25,9 @@ help:
 	  'make core          wemake-django-template CI for core in Docker' \
 	  'make ty            second type checker for core (non-blocking)' \
 	  'make mutants       mutation testing for Rust and core' \
-	  'make security      gitleaks, cargo-deny advisories, npm audit, pip-audit' \
-	  'make duplicates    jscpd over Python and Rust' \
+	  'make security      gitleaks, cargo-deny advisories, pip-audit' \
+	  'make duplicates    clones: repeated blocks of Python and Rust' \
+	  'make hooks         lint, type check and test the agent hooks in scripts/' \
 	  'make up            start the whole system' \
 	  'make down          stop the whole system' \
 	  'make e2e           check a request through every service' \
@@ -39,7 +42,6 @@ doctor:
 
 .PHONY: setup
 setup: env
-	npm ci --ignore-scripts
 	rustup show active-toolchain || rustup toolchain install
 	cd $(CORE) && POETRY_VIRTUALENVS_IN_PROJECT=true POETRY_VIRTUALENVS_USE_POETRY_PYTHON=true \
 	  uvx --python $(PYTHON_VERSION) poetry==$(POETRY_VERSION) sync
@@ -92,14 +94,19 @@ rust:
 security: env
 	gitleaks git --no-banner --redact .
 	cargo deny --locked check advisories
-	node scripts/npm-audit.mjs
 	cd $(CORE) && $(COMPOSE) build web && \
 	  $(COMPOSE) run --rm --no-deps web pip-audit --desc
 
 .PHONY: duplicates
 duplicates:
-	npx --no-install jscpd --min-lines 8 --format python,rust --exit-code 1 --no-tips \
-	  --ignore '**/server/contracts/**,**/migrations/**' services tools contracts
+	cargo run -q -p clones --locked -- services tools contracts scripts
+
+.PHONY: hooks
+hooks:
+	$(UVX) ruff@$(call LOCKED,ruff) check --no-fix scripts
+	$(UVX) ruff@$(call LOCKED,ruff) format --check scripts
+	cd scripts && $(UVX) --with pytest==$(call LOCKED,pytest) mypy@$(call LOCKED,mypy) --strict .
+	cd scripts && $(UVX) pytest@$(call LOCKED,pytest) -q -p no:cacheprovider
 
 .PHONY: mutants
 mutants: mutants-rust mutants-core
@@ -137,17 +144,17 @@ e2e: up
 
 .PHONY: commitlint
 commitlint:
-	npx --no-install commitlint --last --verbose
+	git log -z --format=%B $(or $(RANGE),-1) | cargo run -q -p commit-lint --locked
 
 .PHONY: changelog
 changelog:
 	@test -n "$(VERSION)" || { echo 'usage: make changelog VERSION=vYYYY.MM.DD'; exit 1; }
-	npx --no-install git-cliff --tag $(VERSION) --output CHANGELOG.md
+	git-cliff --tag $(VERSION) --output CHANGELOG.md
 
 .PHONY: release-notes
 release-notes:
-	@npx --no-install git-cliff --latest --strip header
+	@git-cliff --latest --strip header
 
 .PHONY: check
-check: commitlint security contracts architecture duplicates rust core mutants e2e
+check: commitlint security contracts architecture hooks duplicates rust core mutants e2e
 	$(MAKE) down

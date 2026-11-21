@@ -21,15 +21,20 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-      - run: npm ci --ignore-scripts
+      - name: Install toolchain from rust-toolchain.toml
+        run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
       - name: Pull request title
         if: github.event_name == 'pull_request'
         env:
           TITLE: ${{ github.event.pull_request.title }}
-        run: printf '%s' "$TITLE" | npx --no-install commitlint --verbose
+        run: printf '%s' "$TITLE" | cargo run -q -p commit-lint --locked
+      - name: Commits of the pull request
+        if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: make commitlint RANGE="$BASE..$HEAD"
       - name: Pushed commits
         if: github.event_name == 'push'
         env:
@@ -37,9 +42,9 @@ jobs:
           AFTER: ${{ github.sha }}
         run: |
           if git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
-            npx --no-install commitlint --from "$BEFORE" --to "$AFTER" --verbose
+            make commitlint RANGE="$BEFORE..$AFTER"
           else
-            npx --no-install commitlint --last --verbose
+            make commitlint
           fi
 
   secrets:
@@ -63,15 +68,15 @@ jobs:
         run: gitleaks git --no-banner --redact .
 
   tooling:
-    name: Tooling (npm audit, jscpd)
+    name: Tooling (hooks, duplicates)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-      - run: node scripts/npm-audit.mjs
-      - run: npm ci --ignore-scripts
+      - uses: astral-sh/setup-uv@v7
+      - name: Install toolchain from rust-toolchain.toml
+        run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - run: make hooks
       - run: make duplicates
 
   contracts:
