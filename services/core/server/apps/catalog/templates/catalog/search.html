@@ -1,0 +1,39 @@
+{% extends "layout/base.html" %}
+{% block title %}Search{% endblock title %}
+{% block content %}
+  <h1 class="ds-heading mb-6">Search</h1>
+  <form
+    method="get"
+    action="{% url 'catalog:search' %}"
+    class="mb-8 flex items-end gap-4"
+  >
+    <label class="ds-field">
+      <span>Name</span>
+      <input
+        type="search"
+        name="q"
+        value="{{ query }}"
+        required
+        class="ds-input"
+      >
+    </label>
+    <button type="submit" class="ds-button">Search</button>
+  </form>
+  {% if query %}
+    {% if products %}
+      <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {% for product, price in products %}
+          <li class="ds-card">
+            <a
+              href="{% url 'catalog:product' identifier=product.id %}"
+              class="ds-link text-lg font-medium"
+            >{{ product.name }}</a>
+            <p class="ds-price mt-2">{{ price }}</p>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="ds-muted">Nothing resembles “{{ query }}”.</p>
+    {% endif %}
+  {% endif %}
+{% endblock content %}
