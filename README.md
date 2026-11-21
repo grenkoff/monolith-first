@@ -16,7 +16,7 @@ asks the key questions and builds a working version.
 | Extracted services | Rust: [axum](https://github.com/tokio-rs/axum), [tonic](https://github.com/hyperium/tonic), [async-nats](https://github.com/nats-io/nats.rs) |
 | Rust style | Elegant Objects on 100%: clippy pedantic + [`eo-lint`](tools/eo-lint) |
 | Communication | between modules: facades and an outbox of events; between services: gRPC contracts in [`proto/`](proto) ([buf](https://buf.build)) and events over [NATS](https://nats.io) |
-| Frontend | Django templates, [Tailwind CSS](https://tailwindcss.com), web components in plain JavaScript and browser Web APIs; no JavaScript framework, no Node.js |
+| Frontend | Django templates, [Tailwind CSS](https://tailwindcss.com) limited to the tokens of one [design system](docs/design-system.md) with three themes (`/design/` shows them), web components in plain JavaScript and browser Web APIs; no JavaScript framework, no Node.js |
 | Runtime | Docker Compose, PostgreSQL |
 
 ## Start a new project
@@ -96,6 +96,7 @@ the cargo tools listed in [`AGENTS.md`](AGENTS.md#developer-environment).
 - [Architecture](docs/architecture.md)
 - [Elegant Objects rules](docs/elegant-objects.md)
 - [Test-driven development](docs/tdd.md)
+- [Design system](docs/design-system.md): tokens, three themes, components
 - [Cookbook](docs/cookbook.md): step-by-step recipes for typical tasks
 - [Design patterns registry](docs/patterns.md)
 - [Rules for AI agents](AGENTS.md)

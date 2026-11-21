@@ -45,6 +45,7 @@ Read before the first change, in this order:
 2. `docs/architecture.md`: the monolith, its modules and how a module
    becomes a service;
 3. `docs/elegant-objects.md`: object design rules;
+   `docs/design-system.md`: tokens, themes and components of the pages;
 4. `docs/tdd.md`: how code is written;
 5. `services/core/README.md` and `services/core/docs/`: the Django service
    from wemake-django-template.
@@ -75,7 +76,7 @@ all of them, including the GitHub settings):
 | `tools/commit-lint/` | checks commit messages: Conventional Commits, one line |
 | `tools/clones/` | finds blocks of Python and Rust code repeated in the repository |
 | `scripts/` | code generation, end-to-end check, checks and agent hooks (the TDD hook with its tests) |
-| `docs/` | architecture, Elegant Objects, TDD, patterns registry, cookbook |
+| `docs/` | architecture, Elegant Objects, TDD, design system, patterns registry, cookbook |
 | `.github/` | CI workflow, Dependabot |
 | `.claude/` | Claude Code hooks, commands and subagents (see "Agent tools") |
 | `compose.yml` | the whole system for `make up` |
@@ -341,10 +342,18 @@ JavaScript; JavaScript only improves them (progressive enhancement).
    Tailwind classes; no colour, size or font written by hand in a
    template. A new page therefore matches the rest of the site.
 4. **Three themes.** The design system ships three themes on the same
-   components; a project picks one in "A new product" and may let its
-   visitors switch.
+   components (`classic`, `warm`, `bold`); a project picks one with
+   `DJANGO_THEME` in "A new product" and may let its visitors switch.
+   Tokens, themes and components: `docs/design-system.md`; every
+   component in every theme: `/design/`.
 5. **Accessible by default**: semantic HTML, labels on every control,
    keyboard focus visible, contrast of the tokens checked.
+
+Machine-enforced: Tailwind knows only the tokens (its default palette,
+fonts, radii and shadows are switched off), and `scripts/design.py`
+(in `make core`) rejects palette colours, arbitrary values and `style`
+attributes in templates, a theme without a token and text below a
+contrast of 4.5:1.
 
 Where it lives: a module renders its pages in `views/pages.py` (Django
 views, routed in `views/urls.py` and included in `server/urls.py` under

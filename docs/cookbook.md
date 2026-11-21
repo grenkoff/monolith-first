@@ -61,8 +61,9 @@ Example: the product page `GET /products/<id>/` in `server/apps/catalog/`.
    template; a domain error becomes `Http404` or a page with its status.
    Amounts of money go through `server.common.money.Cents`.
 4. The template in `templates/<app>/<page>.html` extends
-   `layout/base.html` and fills `content` (and `title`). It is styled only
-   with Tailwind classes; forms carry `{% csrf_token %}`, labels and HTML
+   `layout/base.html` and fills `content` (and `title`). It is styled with
+   the components and tokens of `docs/design-system.md` plus Tailwind
+   layout utilities; forms carry `{% csrf_token %}`, labels and HTML
    validation (`required`, `min`), and work without JavaScript.
 5. Route it in `views/urls.py` and include the list in `server/urls.py`
    with the namespace of the module:
