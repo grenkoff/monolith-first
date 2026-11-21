@@ -108,6 +108,29 @@ Example: `orders` prices an order with the `Catalog` facade of `catalog`.
    `server/implemented.py` hands it the facade that
    `server/composition/catalog.py` builds.
 
+## Move a computation to Rust inside the monolith
+
+Example: the catalog search ranks names in Rust
+(`services/core/native`, Python module `ranking`). Only for work where
+Python is measurably too slow; everything else stays in Python.
+
+1. Red/green in Rust: an object in `src/domain/` with unit tests next to
+   it (`Phrase` and `Resembled` in `phrase.rs`); `make rust` checks the
+   crate (fmt, clippy with and without the `python` feature, 100% line
+   coverage, `eo-lint`, cargo-deny) and `make mutants` mutates it.
+2. The binding in `src/python.rs`, compiled only with the `python`
+   feature: a `#[pyclass(frozen)]` adapter with `#[new]` and
+   `__call__` (callable like a use case), exported by a declarative
+   `#[pymodule] mod`. Keep it free of logic: cargo-mutants skips it
+   (`.cargo/mutants.toml`), the Python tests of the adapter cover it.
+3. Types for Python in `ranking.pyi` next to `Cargo.toml`.
+4. The image of `core` builds the wheel with maturin in the stage
+   `native_build` and installs it; nothing to do by hand.
+5. In the module: a protocol in `logic/` (`Similarity`), the use case
+   tested with a fake (`SearchProducts`), the adapter in `infra/`
+   (`RustSimilarity`) tested against the real extension, bound in
+   `server/composition/<module>.py`.
+
 ## Add a Rust service
 
 1. Contract first: `proto/<name>/v1/<name>.proto`, package `<name>.v1`,
