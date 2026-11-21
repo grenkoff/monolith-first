@@ -27,7 +27,7 @@ cd my-site
 make doctor   # lists the tools that are missing
 make setup    # installs the Rust toolchain and the core venv
 make env      # creates services/core/config/.env
-make up       # starts the monolith on http://localhost:8000
+make up       # starts the site on http://localhost:8000
 make e2e      # checks that an order reaches the catalog through the outbox
 ```
 
