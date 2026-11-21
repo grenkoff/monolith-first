@@ -122,6 +122,10 @@ STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 )
 
+STATICFILES_DIRS = (BASE_DIR.joinpath('server', 'common', 'django', 'static'),)
+
+SITE_NAME = config('DJANGO_SITE_NAME', default='Example shop')
+
 
 # Templates
 # https://docs.djangoproject.com/en/6.1/ref/templates/api
@@ -143,6 +147,7 @@ TEMPLATES = [
                 'django.template.context_processors.media',
                 'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.request',
+                'server.common.django.context.site',
             ],
         },
     },

@@ -11,3 +11,6 @@ class Products(Catalog, Protocol):
 
     def add(self, draft: ProductDraft) -> Product:
         """Puts a product on sale and returns it."""
+
+    def on_sale(self) -> list[Product]:
+        """Returns every product on sale, sorted by name."""
