@@ -35,6 +35,8 @@ gunicorn = "^26.0"
 python-decouple = "^3.8"
 structlog = "^26.1"
 punq = "^0.9"
+grpcio = "^1.85"
+protobuf = "^7.36"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -80,6 +82,8 @@ deptry = "^0.25"
 codespell = "^2.4"
 typos = "^1.49"
 vulture = "^2.16"
+types-grpcio = ">=1.0"
+types-protobuf = ">=6.32"
 
 [tool.poetry.group.docs]
 optional = true
