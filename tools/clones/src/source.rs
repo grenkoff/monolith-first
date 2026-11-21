@@ -62,8 +62,9 @@ impl Meaningful for Source {
     fn lines(&self) -> Vec<Line> {
         self.text
             .lines()
-            .take(0)
-            .map(|text| Line::new(0, text))
+            .enumerate()
+            .map(|(index, text)| Line::new(index + 1, text.trim()))
+            .filter(|line| line.text.chars().any(char::is_alphanumeric))
             .collect()
     }
 }

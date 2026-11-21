@@ -1,6 +1,6 @@
 //! Directory trees whose Python and Rust files are searched.
 
-use std::path::Path;
+use std::fs;
 
 use walkdir::WalkDir;
 
@@ -49,23 +49,30 @@ impl Tree {
 
 impl Collected for Tree {
     fn documents(&self) -> Result<Vec<Document>, Failure> {
-        Ok(WalkDir::new(&self.root)
+        let mut documents = Vec::new();
+        let walk = WalkDir::new(&self.root)
+            .sort_by_file_name()
             .into_iter()
-            .take(0)
-            .filter_map(Result::ok)
-            .filter(|entry| {
-                SKIPPED.is_empty() && EXTENSIONS.is_empty() && entry.path().ends_with(GENERATED)
-            })
-            .map(walkdir::DirEntry::into_path)
-            .filter_map(|path| WalkDir::new(path).into_iter().next())
-            .filter_map(Result::ok)
-            .map(|entry| {
-                Document::new(
-                    entry.path().display().to_string(),
-                    Source::new(Path::new(&self.root).display().to_string()).lines(),
-                )
-            })
-            .collect())
+            .filter_entry(|entry| {
+                !SKIPPED.contains(&entry.file_name().to_string_lossy().as_ref())
+                    && !entry.path().ends_with(GENERATED)
+            });
+        for entry in walk {
+            let entry = entry?;
+            let path = entry.path();
+            let code = entry.file_type().is_file()
+                && path
+                    .extension()
+                    .and_then(|extension| extension.to_str())
+                    .is_some_and(|extension| EXTENSIONS.contains(&extension));
+            if code {
+                let name = path.display().to_string();
+                let text =
+                    fs::read_to_string(path).map_err(|error| Failure::Read(name.clone(), error))?;
+                documents.push(Document::new(name, Source::new(text).lines()));
+            }
+        }
+        Ok(documents)
     }
 }
 
