@@ -2,6 +2,69 @@
 
 Every release of this project, built by `make changelog` from Conventional Commits.
 
+## v2026.11.21
+
+### Features
+
+- **commit-lint**: Check headers, types, scopes and the one-line rule
+- **clones**: Find blocks of eight lines repeated in python and rust code
+- **hooks**: Refuse implementation edits until a test fails
+- **catalog**: Render the home and product pages in one layout
+- **orders**: Place orders from the product page and show the order
+- **core**: Style every page with one design system and three themes
+- **catalog**: Rank names by the resemblance of their words in rust
+- **catalog**: Search products by name, ranked in rust
+- **core**: Render the theme switcher and the live total for web components
+- **core**: Add the theme switcher and live total components
+- **proto**: Add the contract of the images service
+- **images**: Fit photos to a width and draw them as thumbnails
+- **images**: Serve thumbnails over grpc with a health check
+- **catalog**: Add the table of product thumbnails
+- **catalog**: Keep thumbnails of product photos made by the images service
+- **catalog**: Show product thumbnails in the admin
+- **hooks**: Create a module of core with every layer and install it
+
+### Bug fixes
+
+- **catalog**: Keep the docstring of the home page out of the pattern registry
+- **core**: Read whole answers in the end-to-end check before matching them
+- **core**: Judge contrast to two decimals and channels by their eight-bit value
+- **core**: Restore the executable bit of the ci and doctor scripts
+- **images**: Keep the fitted height within the height of the photo
+- **catalog**: Accept photos up to 8 MB in requests up to 12 MB
+- **hooks**: Drop the executable bit of the generator and its docs
+
+### Refactoring
+
+- **core**: Name the namespaces of page routes in the root config
+- **core**: Serve the design page as a template view
+- **core**: Declare the design page in the routes without a view class
+- **hooks**: Read the technical names from the module check
+
+### Documentation
+
+- **agents**: Set the rules of a web template with python and rust
+- **readme**: Rename the template to monolith-first
+- **agents**: Describe the tooling without node.js
+- Describe the pages and the stylesheet build
+- Describe the tokens, themes, components and checks of the design system
+- Describe rust inside the monolith and the catalog search
+- Describe web components, Biome and the browser tests
+- Describe the images service as the example of an extracted service
+- Start a new product with /new-product and the questionnaire
+- List every part of the example to remove for a new product
+
+### Build
+
+- **tools**: Run commit-lint, clones and the tdd hook instead of node tools
+- Remove node.js, npm and their lock files from the tooling
+- **core**: Build the stylesheet with the tailwind standalone cli
+- **core**: Check, cover and mutate the rust extension module with the workspace
+- **images**: Run the images service in compose next to core
+- **core**: Add grpc, the generated images contract and its settings
+- **core**: Keep the rust build folder out of the spelling checks
+- Add make module to create a module of core
+
 ## v2026.11.19
 
 ### Features
