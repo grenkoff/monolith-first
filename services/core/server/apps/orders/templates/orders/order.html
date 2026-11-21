@@ -1,11 +1,13 @@
 {% extends "layout/base.html" %}
 {% block title %}Order{% endblock title %}
 {% block content %}
-  <h1 class="mb-4 text-3xl font-bold">Order placed</h1>
-  <p>Quantity: {{ order.quantity }}</p>
-  <p class="mb-6 text-xl">Total: {{ total }}</p>
+  <h1 class="ds-heading mb-4">Order placed</h1>
+  <div class="ds-card mb-6 max-w-md">
+    <p class="ds-muted">Quantity: {{ order.quantity }}</p>
+    <p class="ds-price">Total: {{ total }}</p>
+  </div>
   <a
     href="{% url 'catalog:product' identifier=order.product %}"
-    class="underline"
+    class="ds-link"
   >Back to the product</a>
 {% endblock content %}

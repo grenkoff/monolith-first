@@ -1,1 +1,89 @@
 @import "tailwindcss" source("../../..");
+@import "./themes.css";
+
+@theme {
+  --color-*: initial;
+  --font-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+}
+
+@theme inline {
+  --color-surface: var(--ds-surface);
+  --color-surface-raised: var(--ds-surface-raised);
+  --color-ink: var(--ds-ink);
+  --color-ink-muted: var(--ds-ink-muted);
+  --color-line: var(--ds-line);
+  --color-accent: var(--ds-accent);
+  --color-accent-ink: var(--ds-accent-ink);
+  --color-danger: var(--ds-danger);
+  --font-body: var(--ds-font-body);
+  --font-heading: var(--ds-font-heading);
+  --radius-control: var(--ds-radius-control);
+  --radius-card: var(--ds-radius-card);
+  --shadow-card: var(--ds-shadow-card);
+}
+
+@layer base {
+  body {
+    @apply bg-surface font-body text-ink antialiased;
+  }
+}
+
+@layer components {
+  .ds-container {
+    @apply mx-auto w-full max-w-5xl px-4;
+  }
+
+  .ds-heading {
+    @apply font-heading text-3xl font-bold tracking-tight text-ink;
+  }
+
+  .ds-subheading {
+    @apply font-heading text-xl font-semibold text-ink;
+  }
+
+  .ds-muted {
+    @apply text-ink-muted;
+  }
+
+  .ds-link {
+    @apply text-accent underline underline-offset-4 hover:no-underline;
+  }
+
+  .ds-button {
+    @apply inline-flex items-center justify-center gap-2 rounded-control bg-accent px-4 py-2 font-medium text-accent-ink shadow-card hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+  }
+
+  .ds-button-quiet {
+    @apply inline-flex items-center justify-center gap-2 rounded-control border border-line bg-surface px-4 py-2 font-medium text-ink hover:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+  }
+
+  .ds-card {
+    @apply rounded-card border border-line bg-surface-raised p-4 shadow-card;
+  }
+
+  .ds-field {
+    @apply flex flex-col gap-1 text-sm font-medium text-ink;
+  }
+
+  .ds-input {
+    @apply rounded-control border border-line bg-surface px-3 py-2 text-base text-ink focus-visible:outline-2 focus-visible:outline-accent;
+  }
+
+  .ds-alert {
+    @apply rounded-card border border-danger bg-surface-raised p-4 text-danger;
+  }
+
+  .ds-price {
+    @apply font-heading text-xl font-semibold text-ink;
+  }
+
+  .ds-header {
+    @apply border-b border-line bg-surface-raised;
+  }
+
+  .ds-footer {
+    @apply border-t border-line text-sm text-ink-muted;
+  }
+}

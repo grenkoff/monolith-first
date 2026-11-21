@@ -1,0 +1,39 @@
+{% extends "layout/base.html" %}
+{% block title %}Design system{% endblock title %}
+{% block content %}
+  <h1 class="ds-heading mb-2">Design system</h1>
+  <p class="ds-muted mb-8">
+    Every component in each theme. Pages use these components and the tokens
+    behind them, nothing else.
+  </p>
+  <div class="grid gap-8 lg:grid-cols-3">
+    {% for name in themes %}
+      <section
+        data-theme="{{ name }}"
+        class="flex flex-col gap-4 bg-surface p-6 font-body text-ink"
+        aria-labelledby="theme-{{ name }}"
+      >
+        <h2 id="theme-{{ name }}" class="ds-subheading">{{ name }}</h2>
+        <p class="ds-heading">Heading</p>
+        <p>
+          Body text with <a href="#theme-{{ name }}" class="ds-link">a link</a>.
+        </p>
+        <p class="ds-muted">Muted text for details.</p>
+        <p class="ds-price">12.50</p>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" class="ds-button">Primary</button>
+          <button type="button" class="ds-button-quiet">Quiet</button>
+        </div>
+        <div class="ds-card">
+          <p class="font-medium">Card</p>
+          <p class="ds-muted">Content on a raised surface.</p>
+        </div>
+        <label class="ds-field">
+          <span>Field</span>
+          <input type="text" class="ds-input" placeholder="Value">
+        </label>
+        <p class="ds-alert">Something needs attention.</p>
+      </section>
+    {% endfor %}
+  </div>
+{% endblock content %}

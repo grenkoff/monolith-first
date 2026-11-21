@@ -1,19 +1,19 @@
 {% extends "layout/base.html" %}
 {% block content %}
-  <h1 class="mb-6 text-3xl font-bold">Products</h1>
+  <h1 class="ds-heading mb-6">Products</h1>
   {% if products %}
     <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {% for product, price in products %}
-        <li class="rounded-lg border border-gray-200 p-4">
+        <li class="ds-card">
           <a
             href="{% url 'catalog:product' identifier=product.id %}"
-            class="text-lg font-medium hover:underline"
+            class="ds-link text-lg font-medium"
           >{{ product.name }}</a>
-          <p class="mt-2 text-gray-600">{{ price }}</p>
+          <p class="ds-price mt-2">{{ price }}</p>
         </li>
       {% endfor %}
     </ul>
   {% else %}
-    <p class="text-gray-600">Nothing is on sale yet.</p>
+    <p class="ds-muted">Nothing is on sale yet.</p>
   {% endif %}
 {% endblock content %}
