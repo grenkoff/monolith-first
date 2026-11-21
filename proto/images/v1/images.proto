@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package images.v1;
+
+service ImagesService {
+  rpc Thumbnail(ThumbnailRequest) returns (ThumbnailResponse);
+}
+
+message ThumbnailRequest {
+  bytes image = 1;
+  uint32 width = 2;
+}
+
+message ThumbnailResponse {
+  bytes image = 1;
+  uint32 width = 2;
+  uint32 height = 3;
+}
