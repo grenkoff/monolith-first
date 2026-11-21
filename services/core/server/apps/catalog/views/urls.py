@@ -11,4 +11,5 @@ urlpatterns = [
         pages.ProductPage.as_view(),
         name='product',
     ),
+    path('search/', pages.Search.as_view(), name='search'),
 ]
