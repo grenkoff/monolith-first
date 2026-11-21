@@ -72,7 +72,9 @@ all of them, including the GitHub settings):
 | `services/core/` | the monolith: every module, the public HTTP API, admin, its database |
 | `services/<name>/` | modules extracted into Rust services; none until a module has to leave |
 | `tools/eo-lint/` | Elegant Objects linter for Rust |
-| `scripts/` | code generation, end-to-end check, checks and agent hooks |
+| `tools/commit-lint/` | checks commit messages: Conventional Commits, one line |
+| `tools/clones/` | finds blocks of Python and Rust code repeated in the repository |
+| `scripts/` | code generation, end-to-end check, checks and agent hooks (the TDD hook with its tests) |
 | `docs/` | architecture, Elegant Objects, TDD, patterns registry, cookbook |
 | `.github/` | CI workflow, Dependabot |
 | `.claude/` | Claude Code hooks, commands and subagents (see "Agent tools") |
@@ -85,12 +87,12 @@ Never edit by hand, regenerate instead:
 - `services/core/server/contracts/`: `make proto`;
 - `docs/patterns.md`: `make patterns`;
 - `CHANGELOG.md`: `make changelog`;
-- `Cargo.lock`, `services/core/poetry.lock`, `package-lock.json`: change
-  dependencies with `cargo`, `poetry`, `npm`;
+- `Cargo.lock`, `services/core/poetry.lock`: change dependencies with
+  `cargo`, `poetry`;
 - migrations in `services/core/server/apps/*/migrations/`: create with
   `makemigrations`, never edit one that was already applied.
 
-Never commit: `target/`, `node_modules/`, `mutants/`, `mutants.out/`,
+Never commit: `target/`, `mutants/`, `mutants.out/`,
 coverage reports, `services/core/config/.env` (all are in `.gitignore`).
 
 ## Stack
@@ -118,7 +120,7 @@ Changing anything in this table needs the human's approval.
 | Identifiers | UUIDv7 (`uuid.uuid7()` in Python, `uuidv7()` in PostgreSQL) |
 | Runtime | Docker Compose |
 | CI and updates | GitHub Actions, Dependabot |
-| Agent tooling | Probity (TDD hook), commitlint (Node.js, tooling only) |
+| Agent tooling | our own: the TDD hook (`scripts/tdd_hook.py`, Python standard library), `commit-lint` and `clones` (Rust); git-cliff for the changelog |
 
 Why sqlx for Rust services:
 
@@ -580,7 +582,7 @@ Machine-enforced (`make check` and CI):
 | unused imports and variables | ruff | rustc `unused` (denied) |
 | unused functions, classes, methods | vulture | rustc `dead_code` (denied) |
 | unused dependencies | deptry | cargo-machete |
-| duplicated code | jscpd (both languages, from 8 lines) | jscpd |
+| duplicated code | `clones` (both languages, from 8 lines) | `clones` |
 
 vulture skips `server/settings/`, which Django reads by name. Other
 framework entrypoints that look unused to vulture (view methods, admin
@@ -700,8 +702,8 @@ Special cases:
 - **Not test-first by nature**: migrations, configuration, generated code,
   documentation. Say so explicitly in the chat when skipping the cycle.
 
-The Probity hook (`probity.config.ts`) blocks an implementation write that
-has no failing test behind it; if it blocks, write the test.
+The TDD hook (`scripts/tdd_hook.py`) blocks an implementation write that
+has no failing test behind it; if it blocks, write the test and run it.
 
 ## Tests
 
@@ -886,18 +888,12 @@ Machine-enforced: `django-migration-linter` (`lintmigrations`) and
 - **Security lint stays on**: ruff `S` (bandit) in Python, clippy in Rust;
   never disable a rule to pass.
 - **Vulnerable dependencies block the merge**: pip-audit for Python,
-  cargo-deny for Rust (`deny.toml`: advisories, licenses, sources),
-  `npm audit` for tooling. Fix by updating; when no fixed version exists,
-  ask the human.
+  cargo-deny for Rust (`deny.toml`: advisories, licenses, sources).
+  Fix by updating; when no fixed version exists, ask the human.
   - An unmaintained Rust crate blocks only when a crate of the workspace
     depends on it directly; deeper in the tree we cannot replace it.
   - Duplicate versions of a Rust crate are reported, not blocking: they
     come from upstream crates and cost build time, not safety.
-  - `npm audit` runs through `scripts/npm-audit.mjs`: an advisory with no
-    fixed version in a tool that never runs in the system may go to
-    `npm-audit-allowlist.json` with its reason, only after the human
-    agrees; the script fails once an allowed advisory is no longer
-    reported, so the entry is removed as soon as a fix arrives.
 - **Containers**: run as a non-root user, base images pinned to a version
   tag and updated by Dependabot.
 
@@ -919,10 +915,11 @@ Adding a dependency:
   into the project.
 - Rust: versions live once in the root `[workspace.dependencies]`; crates
   refer to them with `.workspace = true`.
-- Node.js: tooling only, exact versions (`npm install --save-dev
-  --save-exact`).
-- Lock files (`poetry.lock`, `Cargo.lock`, `package-lock.json`) are always
-  committed with the change that touches dependencies.
+- Tools for the agent hooks (ruff, mypy, pytest in `make hooks`) run
+  through `uvx` at the versions locked in `services/core/poetry.lock`;
+  nothing is installed for them.
+- Lock files (`poetry.lock`, `Cargo.lock`) are always committed with the
+  change that touches dependencies.
 
 Updating:
 
@@ -1004,8 +1001,8 @@ merged (`git worktree remove`).
 - Stage files by name (`git add <paths>`), never `git add .` or `-A`, so
   nothing unrelated slips in.
 
-commitlint checks every commit in CI (`commitlint.config.mjs`,
-`make commitlint`).
+`commit-lint` checks every commit and the pull request title in CI
+(`make commitlint`, `RANGE=<from>..<to>` for several commits).
 
 ## Pull requests and Issues
 
@@ -1117,7 +1114,7 @@ a pull request merges only with every required job green.
 
 | Job | Checks |
 |-----|--------|
-| commits | commit messages and the pull request title (commitlint) |
+| commits | commit messages and the pull request title (`commit-lint`) |
 | secrets | gitleaks over the changes and the history |
 | contracts | `make contracts`: `buf lint`, `buf format`, `buf breaking`; generated code and `docs/patterns.md` up to date |
 | architecture | `make architecture`: import-linter, calls and names of modules, relations between modules, UUIDv7 primary keys, calls to other modules inside transactions, ports and databases in Compose |
@@ -1125,7 +1122,7 @@ a pull request merges only with every required job green.
 | rust-mutants | cargo-mutants: zero survivors |
 | core | the wemake-django-template pipeline (ruff, wemake-python-styleguide, mypy, import-linter, pytest, schemathesis, Django checks, migration linters, deptry), pip-audit, vulture, transaction check, coverage (80% overall, 100% in `logic/`), mutmut |
 | core-ty | ty (non-blocking: reported, never fails the pull request) |
-| tooling | `npm audit`, jscpd (duplication in Python and Rust) |
+| tooling | `make hooks` (ruff, mypy and pytest for `scripts/`), `make duplicates` (`clones`) |
 | e2e | `make up` and a request through every service |
 
 When CI is red:
@@ -1147,7 +1144,7 @@ these tools follows the same rules by hand.
 
 | Tool | Where | What it does |
 |------|-------|--------------|
-| Probity hook | `.claude/settings.json`, `probity.config.ts` | blocks a write to implementation code that has no failing test behind it |
+| TDD hook | `.claude/settings.json`, `scripts/tdd_hook.py` | blocks a write to implementation code until a test run has failed since the last change to a test |
 | Format hook | `.claude/settings.json`, `scripts/format-hook.sh` | after every edit formats the file: `ruff format` and `ruff check --fix` for Python, `rustfmt` for Rust |
 | `/patterns` | `.claude/commands/patterns.md` | runs `make patterns` and shows `docs/patterns.md`, so an existing object is reused before a new one is written |
 | `/cookbook` | `.claude/commands/cookbook.md`, `docs/cookbook.md` | step-by-step recipes: a new Rust service, a Django app, an endpoint, a gRPC method, an event, a migration |
@@ -1161,7 +1158,7 @@ Phrases and what they mean:
 Rules:
 
 1. Never disable, skip or edit a hook to get past it. When a hook blocks,
-   do what it says (for Probity: write the failing test first).
+   do what it says (for the TDD hook: write the failing test and run it).
 2. Start long-running processes in the background and read their logs.
    Stop them when the task is done, unless the human asked to keep them.
 3. A new command, hook or subagent is added through a pull request, and
@@ -1182,16 +1179,17 @@ Required tools (`make doctor` checks them and prints what is missing):
 | rustup (toolchain from `rust-toolchain.toml`) | Rust services and `eo-lint` |
 | cargo-llvm-cov, cargo-mutants, cargo-deny, cargo-machete | Rust checks |
 | protoc | builds the `contracts` crate from `proto/` |
-| uv | installs Python and Poetry for the editor environment |
-| Node.js (major version from `.nvmrc`, through nvm) and npm | Probity, commitlint, jscpd, git-cliff |
+| uv | installs Python and Poetry for the editor environment, runs the linters of `scripts/` |
+| python3 | the TDD hook |
+| git-cliff (`cargo install git-cliff --locked`) | the changelog of a release |
 | buf | contracts |
 | gitleaks | secret scanning |
 
 Setup from a fresh clone:
 
 1. `make env`: creates `services/core/config/.env` from the template.
-2. `make setup`: installs the Node tooling, the Rust components and the
-   Poetry environment of `core` for the editor.
+2. `make setup`: installs the Rust components and the Poetry environment
+   of `core` for the editor.
 3. `make up`: starts the system; `make e2e` proves it works.
 
 Editor: VS Code settings and recommended extensions are committed in
@@ -1199,8 +1197,8 @@ Editor: VS Code settings and recommended extensions are committed in
 (ruff, rustfmt) and the line lengths from "General code rules".
 
 Versions are pinned in the repository (`rust-toolchain.toml`,
-`.python-version`, `.nvmrc`, `package-lock.json`, `poetry.lock`,
-`Cargo.lock`, image tags in `compose.yml`). The agent never upgrades a
+`.python-version`, `poetry.lock`, `Cargo.lock`, image tags in
+`compose.yml`). The agent never upgrades a
 tool on the machine to make a check pass; a version change goes through
 "Dependencies".
 
@@ -1215,7 +1213,7 @@ so local runs match CI.
 | `make help` | lists all targets |
 | `make doctor` | checks that the required tools are installed |
 | `make env` | creates `services/core/config/.env` from the template |
-| `make setup` | installs Node tooling, Rust components and the editor environment of `core` |
+| `make setup` | installs Rust components and the editor environment of `core` |
 | `make proto` | checks the contracts with `buf` and regenerates the Python code |
 | `make patterns` | regenerates `docs/patterns.md` |
 | `make contracts` | `make proto` and `make patterns`, `buf breaking` against `develop`, fails when generated code or `docs/patterns.md` differ from the commit |
@@ -1224,12 +1222,13 @@ so local runs match CI.
 | `make core` | the wemake-django-template pipeline for `core` inside Docker |
 | `make ty` | ty for `core` (non-blocking) |
 | `make mutants` | cargo-mutants and mutmut: zero survivors |
-| `make security` | gitleaks, pip-audit, cargo-deny advisories, `npm audit` |
-| `make duplicates` | jscpd over Python and Rust |
+| `make security` | gitleaks, pip-audit, cargo-deny advisories |
+| `make hooks` | ruff, mypy and pytest for the agent hooks in `scripts/` |
+| `make duplicates` | `clones` over Python and Rust |
 | `make up` / `make down` | starts / stops the whole system |
 | `make logs` | follows the logs of the running system |
 | `make e2e` | starts the system and sends a request through every service |
-| `make commitlint` | checks the commits of the branch against Conventional Commits |
+| `make commitlint` | checks the last commit (or `RANGE=<from>..<to>`) against Conventional Commits |
 | `make changelog VERSION=<version>` | writes `CHANGELOG.md` with git-cliff for the next release |
 | `make release-notes` | prints the notes of the latest release tag for the GitHub Release |
 | `make check` | everything CI runs, in the same order |
