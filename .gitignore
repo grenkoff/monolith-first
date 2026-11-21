@@ -11,3 +11,4 @@ __pycache__/
 .DS_Store
 
 .env
+/services/core/server/common/django/static/site/site.css

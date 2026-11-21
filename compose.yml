@@ -66,5 +66,15 @@ services:
       core-migrate:
         condition: service_completed_successfully
 
+  core-css:
+    <<: *core
+    entrypoint: ["tailwindcss"]
+    command:
+      - --watch=always
+      - --input=server/common/django/styles/site.css
+      - --output=server/common/django/static/site/site.css
+    restart: unless-stopped
+    depends_on: !reset {}
+
 volumes:
   postgres-data:
