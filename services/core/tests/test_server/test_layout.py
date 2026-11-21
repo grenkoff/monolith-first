@@ -10,7 +10,7 @@ from django.urls import reverse
 @pytest.mark.parametrize(
     'fragment',
     [
-        '<html lang="en">',
+        '<html lang="en"',
         'name="viewport"',
         '/static/site/site.css',
         '<header',
