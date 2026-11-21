@@ -1,0 +1,11 @@
+[package]
+name = "commit-lint"
+version = "0.1.0"
+description = "Checks commit messages against Conventional Commits and the one-line rule"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
