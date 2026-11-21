@@ -1,0 +1,7 @@
+{% extends "layout/base.html" %}
+{% block title %}Order refused{% endblock title %}
+{% block content %}
+  <h1 class="mb-4 text-3xl font-bold">The order cannot be placed</h1>
+  <p class="mb-6">{{ reason }}</p>
+  <a href="/" class="underline">Back to the products</a>
+{% endblock content %}
