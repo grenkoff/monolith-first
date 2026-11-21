@@ -88,8 +88,8 @@ impl<C> Thumbnails<C> {
 impl<C: Codec> Thumbnailed for Thumbnails<C> {
     fn thumbnail(&self, bytes: &[u8], width: u32) -> Result<Thumbnail, Refused> {
         let picture = self.codec.decoded(bytes)?;
-        let size = picture.size().fitted(width.max(1))?;
-        Ok(Thumbnail::new(Vec::new(), size))
+        let size = picture.size().fitted(width)?;
+        Ok(Thumbnail::new(picture.drawn(size)?, size))
     }
 }
 

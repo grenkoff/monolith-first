@@ -51,7 +51,16 @@ impl Sides for Size {
 
 impl Fitting for Size {
     fn fitted(&self, width: u32) -> Result<Size, Unfit> {
-        Ok(Self::new(width, self.height))
+        if width == 0 {
+            return Err(Unfit::ZeroWidth);
+        }
+        if width >= self.width {
+            return Ok(*self);
+        }
+        let scaled = (u64::from(self.height) * u64::from(width) * 2 + u64::from(self.width))
+            / (u64::from(self.width) * 2);
+        let height = u32::try_from(scaled).unwrap_or(u32::MAX).max(1);
+        Ok(Self::new(width, height))
     }
 }
 
