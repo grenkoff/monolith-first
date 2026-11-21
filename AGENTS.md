@@ -886,9 +886,12 @@ too slow for it)
 **Fix a bug**
 1. A test that reproduces the bug (red), then the fix (green).
 
-**Remove the example** (`catalog`, `orders`), once the first real module
-exists, in its own pull request: modules, their composition, tests, the
-requests of `scripts/e2e.sh`, `docs/patterns.md`.
+**Remove the example** (`catalog`, `orders`, the `images` service and
+the Rust extension when the product does not need them), once the
+first real module exists, in its own pull request: modules, their
+composition, tests, the service and its contract, the requests of
+`scripts/e2e.sh` and `tests/browser/`, `docs/patterns.md`
+(`docs/cookbook.md` lists every file).
 
 ## Migrations
 
