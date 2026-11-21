@@ -44,7 +44,7 @@ Repeat. Each cycle takes minutes, not hours.
 
 | Check | Where | What it catches |
 |-------|-------|-----------------|
-| **Probity hook** (`probity.config.ts`, `.claude/settings.json`) | every file write of the AI agent | implementation written without a failing test first |
+| **TDD hook** (`scripts/tdd_hook.py`, `.claude/settings.json`) | every file write of the AI agent | implementation changed before a changed test was run and seen failing |
 | **Coverage**: pytest-cov (Python), cargo-llvm-cov (Rust); 100% in `logic/` and `src/domain/`, 80% overall | CI, `make check` | code that no test executes |
 | **Mutation testing**: mutmut (Python), cargo-mutants (Rust) | CI, `make mutants` | tests that execute code but would not notice if it broke |
 | schemathesis + tracecov | CI | API behaviour that differs from the OpenAPI schema |
@@ -54,28 +54,34 @@ would *fail* if that line were wrong: it changes the code (`>` to `>=`,
 `true` to `false`, deletes a call) and expects at least one test to fail.
 A surviving mutant means a missing or weak test: write it, in TDD style.
 
-## The Probity hook
+## The TDD hook
 
-[Probity](https://github.com/nizos/probity) runs before every file write
-of the agent and asks an AI validator (the agent's own model and login)
-whether the write follows red → green → refactor. Rules: `probity.config.ts`.
+`scripts/tdd_hook.py` runs before every file write of Claude Code
+(`.claude/settings.json`). It reads the session transcript, a plain file,
+and follows two facts: the outcome of the last test run (`make core`,
+`make rust`, `pytest`, `cargo test` and the like) and whether a test
+changed after it. It needs only `python3`: no packages, no network, no
+model call. A write to implementation code (`services/*/src`,
+`tools/*/src`, `services/core/server`, without settings, migrations,
+generated code and entry points) is refused when:
 
-To turn it on:
+- no test has run in the session yet: write a failing test and run it;
+- a test changed after the last run: run it and see it fail first.
 
-1. Install Node.js from `.nvmrc` and run `make setup` in the repository root.
-2. Run the agent **where the code lives**: on Linux/macOS, or *inside* WSL
-   on Windows (`claude` in the Ubuntu terminal, or VS Code with the WSL
-   extension). Log the agent in there.
-3. Claude Code picks up `.claude/settings.json`. For Codex add the hook from
-   [Probity's setup guide](https://github.com/nizos/probity/blob/main/docs/setup.md)
-   to `~/.codex/hooks.json`.
+Everything else passes: a new file (the empty skeleton of the red step),
+a change after a failing run (green) or after a passing run with no test
+changed since (refactor), and any test, including a Rust test written in
+place under `#[cfg(test)]`. The hook cannot tell new behaviour from a
+refactoring on green; coverage and mutation testing in CI catch code that
+no test asked for.
 
-`scripts/probity-hook.sh` reports at session start when the guard is off:
-when `make setup` was not run, or when Claude Code runs on Windows while
-the project is inside WSL. In that combination Probity cannot work
-correctly (Linux native modules, Linux paths), so the hook steps aside
-instead of blocking every write. Coverage and mutation testing in CI still
-apply.
+Run the agent **where the code lives**: on Linux/macOS, or *inside* WSL on
+Windows (`claude` in the Ubuntu terminal, or VS Code with the WSL
+extension). `scripts/tdd-hook.sh` reports at session start when the guard
+is off: when `python3` is missing, or when Claude Code runs on Windows
+while the project is inside WSL. Other agents (Codex) follow the same
+rules by hand; CI still applies to them. `make hooks` lints and tests the
+hook.
 
 ## Exclusions
 

@@ -25,7 +25,7 @@ asks the key questions and builds a working version.
 gh repo create my-site --template grenkoff/monolith-first --private --clone
 cd my-site
 make doctor   # lists the tools that are missing
-make setup    # installs Node tooling, the Rust toolchain and the core venv
+make setup    # installs the Rust toolchain and the core venv
 make env      # creates services/core/config/.env
 make up       # starts the monolith on http://localhost:8000
 make e2e      # checks that an order reaches the catalog through the outbox
@@ -41,6 +41,8 @@ proto/               gRPC contracts of extracted services (none yet)
 contracts/           Rust crate generated from proto/
 services/core/       the Django monolith (public HTTP API, admin, database)
 tools/eo-lint/       Elegant Objects linter for Rust
+tools/commit-lint/   commit message checker
+tools/clones/        finder of repeated code
 scripts/             code generation, checks, end-to-end check, agent hooks
 docs/                architecture, coding rules, cookbook, patterns registry
 .claude/             Claude Code hooks, commands and a review subagent
@@ -71,23 +73,23 @@ monolith.
 | rust | `cargo fmt`, clippy pedantic (warnings are errors), tests with line coverage of 80% overall and 100% in `src/domain/` (cargo-llvm-cov), `eo-lint`, cargo-machete, cargo-deny |
 | rust-mutants | mutation testing with cargo-mutants: no mutant may survive |
 | core | the full wemake-django-template pipeline: ruff, wemake-python-styleguide, import-linter, mypy, pytest with coverage of 80% overall and 100% in `logic/`, schemathesis + tracecov, Django deploy checks, migration linters, deptry, codespell, typos, yamllint; mutation testing with mutmut; plus [ty](https://github.com/astral-sh/ty) as a second, non-blocking type checker |
-| tooling | `npm audit`, jscpd (duplicated Python and Rust code) |
+| tooling | lint, types and tests of the agent hooks; `clones` (duplicated Python and Rust code) |
 | e2e | `docker compose up` and an order through the outbox to the catalog |
 
 ## Test-driven development
 
 Code is written test-first, see [docs/tdd.md](docs/tdd.md). For AI agents
-it is enforced by the [Probity](https://github.com/nizos/probity) hook
-(`make setup` once, then run the agent where the code lives); for
-everyone by coverage gates and mutation testing in CI. A second hook
-formats every file the agent writes with ruff or rustfmt.
+it is enforced by a hook of our own that refuses implementation until a
+test has failed (run the agent where the code lives); for everyone by
+coverage gates and mutation testing in CI. A second hook formats every
+file the agent writes with ruff or rustfmt.
 
 ## Requirements
 
 Linux, macOS or WSL2 with Docker, Rust (`rustup`), `protoc`,
-[uv](https://docs.astral.sh/uv/), Node.js from [`.nvmrc`](.nvmrc), buf,
-gitleaks and the cargo tools listed in [`AGENTS.md`](AGENTS.md#developer-environment).
-`make doctor` says what is missing.
+[uv](https://docs.astral.sh/uv/), Python 3, buf, gitleaks, git-cliff and
+the cargo tools listed in [`AGENTS.md`](AGENTS.md#developer-environment).
+`make doctor` says what is missing. No Node.js.
 
 ## Documentation
 
