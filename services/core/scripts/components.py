@@ -1,13 +1,22 @@
 """Reports browser code that is not a web component of the project."""
 
+import re
 import sys
 from collections.abc import Iterator, Mapping
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Final, Protocol, final, override
 
 import attrs
 
 _ROOT: Final = Path('server')
+_FOLDER: Final = 'components'
+_FOREIGN: Final = re.compile(
+    r'(?:\bfrom\s*|\bimport\s*\(\s*|^\s*import\s+)[\'"](?!\.{1,2}/)',
+)
+_TAG: Final = re.compile(r'<script\b([^>]*)>|\son[a-z]+\s*=')
+_MODULE: Final = re.compile(
+    r'type="module"\s+src="\{%\s*static\s+\'components/[\w-]+\.js\'\s*%\}"',
+)
 
 
 class Report(Protocol):
@@ -27,7 +36,16 @@ class ComponentReport(Report):
     @override
     def problems(self) -> Iterator[str]:
         """Yields one line per misplaced file, missing element or foreign import."""
-        yield from (path for path in self._scripts if not path)
+        for name, text in self._scripts.items():
+            path = PurePosixPath(name)
+            if path.parent.name != _FOLDER:
+                yield f'{name}: JavaScript lives only in static/{_FOLDER}/'
+                continue
+            if f"customElements.define('{path.stem}'" not in text:
+                yield f'{name}: defines no custom element named {path.stem}'
+            for number, line in enumerate(text.splitlines(), start=1):
+                if _FOREIGN.search(line):
+                    yield f'{name}:{number}: imports from outside the project'
 
 
 @final
@@ -40,7 +58,15 @@ class ScriptReport(Report):
     @override
     def problems(self) -> Iterator[str]:
         """Yields one line per inline, foreign or classic script."""
-        yield from (path for path in self._templates if not path)
+        for name, text in self._templates.items():
+            for found in _TAG.finditer(text):
+                attributes = found.group(1)
+                if attributes is None or not _MODULE.search(attributes):
+                    number = text.count('\n', 0, found.start()) + 1
+                    yield (
+                        f'{name}:{number}: scripts come only from '
+                        f'static/{_FOLDER}/ as modules'
+                    )
 
 
 if __name__ == '__main__':

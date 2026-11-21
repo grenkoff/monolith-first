@@ -13,6 +13,13 @@
       type="image/svg+xml"
     >
     <link rel="stylesheet" href="{% static 'site/site.css' %}">
+    {% if theme_switcher %}
+      <script
+        type="module"
+        src="{% static 'components/site-theme.js' %}"
+      ></script>
+    {% endif %}
+    {% block scripts %}{% endblock scripts %}
   </head>
   <body class="flex min-h-screen flex-col">
     <header class="ds-header">
@@ -21,6 +28,23 @@
           href="/"
           class="font-heading text-xl font-semibold"
         >{{ site_name }}</a>
+        {% if theme_switcher %}
+          <site-theme hidden>
+            <label class="flex items-center gap-2 text-sm">
+              <span>Theme</span>
+              <select class="ds-input py-1">
+                {% for name in themes %}
+                  <option
+                    value="{{ name }}"
+                    {% if name == theme %}selected{% endif %}
+                  >
+                    {{ name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </label>
+          </site-theme>
+        {% endif %}
       </nav>
     </header>
     <main class="ds-container flex-1 py-8">

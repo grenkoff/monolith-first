@@ -49,6 +49,7 @@ run_ci () {
   python -m scripts.docstrings
   python -m scripts.transactions
   python -m scripts.design
+  python -m scripts.components
   flake8 .
 
   # Lint imports:
