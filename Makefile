@@ -33,6 +33,7 @@ help:
 	  'make js            Biome: lint and format check of the web components' \
 	  'make browser       Playwright: the web components in Chromium (system up)' \
 	  'make css           build the stylesheet of core once (Tailwind CLI)' \
+	  'make module        create a module of core: make module NAME=bookings' \
 	  'make up            start the whole system' \
 	  'make down          stop the whole system' \
 	  'make e2e           check a request through every service' \
@@ -44,6 +45,11 @@ help:
 .PHONY: doctor
 doctor:
 	./scripts/doctor.sh
+
+.PHONY: module
+module:
+	@test -n "$(NAME)" || { echo 'usage: make module NAME=<module>'; exit 1; }
+	python3 scripts/scaffold.py $(NAME)
 
 .PHONY: css
 css: env
