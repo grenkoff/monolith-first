@@ -396,14 +396,16 @@ a barbershop"), the agent:
 1. **Plans first**: switches to plan mode with its strongest model (or
    asks the human to switch, when it cannot do it itself) and plans the
    product deeply before any code: modules, pages, data, events.
+   Claude Code runs the whole flow with `/new-product <sentence>`.
 2. **Asks the key questions** in one questionnaire (`docs/intake.md`):
    what the product is for, its pages and entities, users and roles,
    languages of the site, which of the three themes, the brand (name,
    logo, colours) and contacts. Nothing else is asked later that the
    questionnaire could have asked.
-3. **Builds a working version fast**: modules, pages and the theme from
-   the generators and the cookbook, then removes the example; `make up`
-   shows the site.
+3. **Builds a working version fast**: `make module NAME=<module>` creates
+   each module with every layer, the cookbook adds its pages, endpoints
+   and events, the theme is branded through its tokens; then the example
+   is removed and `make up` shows the site.
 
 The usual rules apply from the first line of code: Issues, TDD, checks and
 pull requests.
@@ -823,9 +825,9 @@ Step-by-step recipes live in `docs/cookbook.md` (`/cookbook`); in short:
 5. schemathesis must pass for the new operation.
 
 **Add a module**
-1. `server/apps/<module>/`, named after a business domain, with
-   `public/`, `logic/`, `infra/`, `api/`, `models.py` as needed; add it to
-   `INSTALLED_APPS`.
+1. `make module NAME=<module>`, named after a business domain: it creates
+   `server/apps/<module>/` with `public/`, `logic/`, `infra/`, `api/`,
+   `views/`, `models.py` and migrations, and adds it to `INSTALLED_APPS`.
 2. Include its router in `server/urls.py`.
 3. Nothing to add to `.importlinter`: its contracts cover every module
    through `server.apps.*`.
@@ -1206,6 +1208,7 @@ these tools follows the same rules by hand.
 | TDD hook | `.claude/settings.json`, `scripts/tdd_hook.py` | blocks a write to implementation code until a test run has failed since the last change to a test |
 | Format hook | `.claude/settings.json`, `scripts/format-hook.sh` | after every edit formats the file: `ruff format` and `ruff check --fix` for Python, `rustfmt` for Rust |
 | `/patterns` | `.claude/commands/patterns.md` | runs `make patterns` and shows `docs/patterns.md`, so an existing object is reused before a new one is written |
+| `/new-product` | `.claude/commands/new-product.md`, `docs/intake.md` | starts a product from one sentence: plan mode, the questionnaire, then the build |
 | `/cookbook` | `.claude/commands/cookbook.md`, `docs/cookbook.md` | step-by-step recipes: a new Rust service, a Django app, an endpoint, a gRPC method, an event, a migration |
 | `pattern-reviewer` | `.claude/agents/pattern-reviewer.md` | a subagent that reviews the branch diff against Elegant Objects, the pattern registry and this file before a pull request is opened |
 
@@ -1288,6 +1291,7 @@ so local runs match CI.
 | `make browser` | Playwright tests of the web components against the running system |
 | `make duplicates` | `clones` over Python and Rust |
 | `make css` | builds the stylesheet of `core` once with the Tailwind CLI |
+| `make module NAME=<module>` | creates a module of `core` with every layer and installs it |
 | `make up` / `make down` | starts / stops the whole system; the site is on http://localhost:8000 |
 | `make logs` | follows the logs of the running system |
 | `make e2e` | starts the system and sends a request through every service |
