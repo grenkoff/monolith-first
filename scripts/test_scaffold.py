@@ -22,6 +22,9 @@ def project(tmp_path: Path) -> Path:
     settings.parent.mkdir(parents=True)
     settings.write_text(_APPS)
     (tmp_path / 'services/core/server/apps/catalog').mkdir(parents=True)
+    check = tmp_path / 'services/core/scripts/modules.py'
+    check.parent.mkdir(parents=True)
+    check.write_text("_TECHNICAL: Final = frozenset(('auth', 'utils'))\n")
     return tmp_path
 
 
