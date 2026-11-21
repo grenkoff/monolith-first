@@ -31,8 +31,10 @@ make up       # starts the site on http://localhost:8000
 make e2e      # checks that an order reaches the catalog through the outbox
 ```
 
-Then tell your AI agent what to build. It reads [`AGENTS.md`](AGENTS.md)
-(Claude Code reads it through [`CLAUDE.md`](CLAUDE.md)).
+Then tell your AI agent what to build, in one sentence: in Claude Code
+`/new-product a website for a barbershop`. It plans, asks the questions
+of [`docs/intake.md`](docs/intake.md) and builds the site. It reads
+[`AGENTS.md`](AGENTS.md) (Claude Code through [`CLAUDE.md`](CLAUDE.md)).
 
 ## What is inside
 

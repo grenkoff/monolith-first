@@ -95,11 +95,11 @@ Example: `site-total`, the live total of the product page.
 
 ## Add a Django app
 
-1. `server/apps/<app>/` with `__init__.py`, and only the layers it needs:
-   `logic/` (value objects, protocols, use cases), `infra/`, `api/`,
-   `models.py`, `admin.py`, and `public/` once another module needs it.
-2. Add `'server.apps.<app>'` to `INSTALLED_APPS` in
-   `server/settings/components/common.py`.
+1. `make module NAME=<app>`: it refuses a name of a technical layer or an
+   existing module, creates `server/apps/<app>/` with `public/`,
+   `logic/usecases/`, `infra/`, `api/`, `views/`, `migrations/` and
+   `models.py`, and adds `'server.apps.<app>'` to `INSTALLED_APPS`.
+2. Delete the layers the module will not need before the pull request.
 3. Include its router in `server/urls.py`, and its pages when it has
    `views/` (see "Add a page").
 4. The contracts in `services/core/.importlinter` cover every app through
