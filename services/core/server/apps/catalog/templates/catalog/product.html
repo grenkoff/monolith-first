@@ -3,7 +3,11 @@
 {% block content %}
   <h1 class="mb-2 text-3xl font-bold">{{ product.name }}</h1>
   <p class="mb-6 text-xl text-gray-600">{{ price }}</p>
-  <form method="post" action="/orders/" class="flex items-end gap-4">
+  <form
+    method="post"
+    action="{% url 'orders:place' %}"
+    class="flex items-end gap-4"
+  >
     {% csrf_token %}
     <input type="hidden" name="product" value="{{ product.id }}">
     <label class="flex flex-col gap-1">
