@@ -23,6 +23,7 @@ from server.apps.catalog.api import urls as catalog_api_urls
 from server.apps.catalog.views import urls as catalog_page_urls
 from server.apps.orders.api import urls as orders_api_urls
 from server.apps.orders.views import urls as orders_page_urls
+from server.common.django.views import DesignSystem
 
 admin.autodiscover()
 
@@ -75,6 +76,7 @@ urlpatterns = [
     # Pages:
     path('', include((catalog_page_urls.urlpatterns, 'catalog'))),
     path('', include((orders_page_urls.urlpatterns, 'orders'))),
+    path('design/', DesignSystem.as_view(), name='design'),
     # Health checks:
     path(
         'health/',
