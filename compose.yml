@@ -21,6 +21,7 @@ x-core: &core
   env_file: ./services/core/config/.env
   environment:
     DJANGO_DATABASE_HOST: db
+    IMAGES_GRPC_ADDR: images:50051
   depends_on:
     db:
       condition: service_healthy
@@ -49,6 +50,8 @@ services:
     depends_on:
       core-migrate:
         condition: service_completed_successfully
+      images:
+        condition: service_healthy
     ports:
       - "8000:8000"
     healthcheck:
@@ -75,6 +78,14 @@ services:
       - --output=server/common/django/static/site/site.css
     restart: unless-stopped
     depends_on: !reset {}
+
+  images:
+    build:
+      context: .
+      dockerfile: ./services/images/Dockerfile
+    image: "images:dev"
+    restart: unless-stopped
+    logging: *logging
 
 volumes:
   postgres-data:
