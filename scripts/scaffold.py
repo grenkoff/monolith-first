@@ -52,7 +52,29 @@ class Module:
 
     def created(self) -> list[Path]:
         """Creates the packages of the module, installs it, returns the files."""
-        return []
+        if not _NAME.match(self._name) or self._name in _TECHNICAL:
+            raise UnfitNameError(
+                f'`{self._name}` is not the name of a business domain',
+            )
+        folder = self._root / _APPS / self._name
+        if folder.exists():
+            raise UnfitNameError(f'module `{self._name}` already exists')
+        files = [folder / package / '__init__.py' for package in _PACKAGES]
+        for path in files:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.touch()
+        models = folder / 'models.py'
+        models.write_text(f'"""Database models of {self._name}."""\n')
+        settings = self._root / _SETTINGS
+        line = f"    'server.apps.{self._name}',\n"
+        settings.write_text(
+            _INSTALLED.sub(
+                lambda found: found.group(0) + line,
+                settings.read_text(),
+                count=1,
+            ),
+        )
+        return [*files, models]
 
 
 if __name__ == '__main__':
