@@ -103,9 +103,11 @@ service next to the monolith:
 - **Only `core` is public**; a service has its own database and deploys
   alone.
 
-The template runs no such service: the Rust workspace, `eo-lint`, the
-`contracts` crate and buf are kept ready and checked in CI, so the first
-module that leaves starts from green tooling.
+The template runs one such service as an example, `images`: `core`
+sends it the photo of a product over gRPC (`ImagesService/Thumbnail`) and
+keeps the JPEG thumbnail in its own table. It owns no data and publishes
+no events, so it has neither a database nor NATS; a service that owns
+data gets both, as the rules above say.
 
 A service follows the layout `services/<name>/src`: `api/` (tonic
 endpoint, axum health check) → `infra/` (NATS adapter, settings) →

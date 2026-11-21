@@ -37,10 +37,11 @@ Then tell your AI agent what to build. It reads [`AGENTS.md`](AGENTS.md)
 ## What is inside
 
 ```
-proto/               gRPC contracts of extracted services (none yet)
+proto/               gRPC contracts of extracted services (images/v1)
 contracts/           Rust crate generated from proto/
 services/core/       the Django monolith (pages, public HTTP API, admin, database)
 services/core/native the Rust extension module of the monolith (PyO3, maturin)
+services/images/     the example Rust service: thumbnails over gRPC
 tools/eo-lint/       Elegant Objects linter for Rust
 tools/commit-lint/   commit message checker
 tools/clones/        finder of repeated code
