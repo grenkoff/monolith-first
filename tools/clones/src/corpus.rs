@@ -1,8 +1,9 @@
 //! Documents of code and the blocks they repeat.
 
+use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 
-use crate::source::Line;
+use crate::source::{Line, Numbered};
 
 /// Lines of one file and the path they come from.
 pub struct Document {
@@ -97,19 +98,73 @@ impl Corpus {
     }
 }
 
+/// Window of `size` lines: the document and the index of its first line.
+type Window = (usize, usize);
+
+/// Starts of matching windows by the two documents and the distance between them.
+type Matches = BTreeMap<(usize, usize, usize), Vec<usize>>;
+
+impl Corpus {
+    /// Returns the matching windows, grouped by the pair of places they belong to.
+    fn matches(&self) -> Matches {
+        let mut first: HashMap<Vec<&str>, Window> = HashMap::new();
+        let mut matches = Matches::new();
+        for (document, lines) in self.documents.iter().enumerate() {
+            for (start, window) in lines.lines.windows(self.size).enumerate() {
+                let key: Vec<&str> = window.iter().map(Numbered::text).collect();
+                match first.get(&key) {
+                    Some(&(original, from))
+                        if original != document || from + self.size <= start =>
+                    {
+                        matches
+                            .entry((original, document, start.wrapping_sub(from)))
+                            .or_default()
+                            .push(from);
+                    }
+                    Some(_) => {}
+                    None => {
+                        first.insert(key, (document, start));
+                    }
+                }
+            }
+        }
+        matches
+    }
+
+    /// Returns the span of the block of windows from `start` to `end` in a document.
+    fn span(&self, document: usize, start: usize, end: usize) -> Span {
+        let found = &self.documents[document];
+        Span::new(
+            &found.path,
+            found.lines[start].number(),
+            found.lines[end + self.size - 1].number(),
+        )
+    }
+}
+
 impl Repeating for Corpus {
     fn duplicates(&self) -> Vec<Duplicate> {
-        self.documents
-            .iter()
-            .take(self.size)
-            .filter(|document| document.lines.is_empty() && document.path.is_empty())
-            .map(|document| {
+        let mut duplicates = Vec::new();
+        for ((original, copy, distance), starts) in self.matches() {
+            let mut runs: Vec<(usize, usize)> = Vec::new();
+            for start in starts {
+                match runs.last_mut() {
+                    Some(run) if run.1 + 1 == start => run.1 = start,
+                    _ => runs.push((start, start)),
+                }
+            }
+            duplicates.extend(runs.into_iter().map(|(start, end)| {
                 Duplicate::new(
-                    Span::new(&document.path, 0, 0),
-                    Span::new(&document.path, 0, 0),
+                    self.span(original, start, end),
+                    self.span(
+                        copy,
+                        start.wrapping_add(distance),
+                        end.wrapping_add(distance),
+                    ),
                 )
-            })
-            .collect()
+            }));
+        }
+        duplicates
     }
 }
 
