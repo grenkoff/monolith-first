@@ -44,6 +44,21 @@ def test_theme_with_low_contrast_is_reported() -> None:
     assert problems[0].startswith('theme plain: ink-muted on surface')
 
 
+def test_contrast_is_checked_past_a_missing_token() -> None:
+    theme = _GOOD_THEME.replace('  --ds-ink: #0f172a;\n', '').replace(
+        '--ds-danger: #b91c1c',
+        '--ds-danger: #fca5a5',
+    )
+    problems = list(ThemeReport(theme).problems())
+    assert problems[0] == 'theme plain has no token --ds-ink'
+    assert problems[1].startswith('theme plain: danger on surface')
+
+
+def test_contrast_of_four_and_a_half_is_readable() -> None:
+    theme = _GOOD_THEME.replace('--ds-ink-muted: #475569', '--ds-ink-muted: #6c7b67')
+    assert not list(ThemeReport(theme).problems())
+
+
 def test_no_theme_is_reported() -> None:
     assert list(ThemeReport('').problems()) == ['no theme is defined']
 
