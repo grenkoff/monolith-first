@@ -5,7 +5,7 @@ set -o pipefail
 
 tools=(
   docker make rustup cargo-llvm-cov cargo-mutants cargo-deny cargo-machete
-  protoc uv python3 buf gitleaks git-cliff
+  protoc uv python3 buf gitleaks git-cliff biome
 )
 missing=0
 

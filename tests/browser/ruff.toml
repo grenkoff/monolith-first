@@ -1,0 +1,4 @@
+extend = "../../services/core/pyproject.toml"
+
+[lint.per-file-ignores]
+"test_*.py" = ["S101"]

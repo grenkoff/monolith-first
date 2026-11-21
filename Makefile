@@ -11,6 +11,7 @@ CONTRACTS := $(shell find proto -name '*.proto' 2>/dev/null)
 DEVELOP_CONTRACTS := $(shell git ls-tree -r --name-only origin/develop -- proto 2>/dev/null | grep '\.proto$$')
 LOCKED = $(shell grep -A1 '^name = "$(1)"' $(CORE)/poetry.lock | sed -n 's/^version = "\(.*\)"/\1/p')
 UVX := uvx -q --python $(PYTHON_VERSION)
+PLAYWRIGHT := 1.64.1
 
 .PHONY: help
 help:
@@ -28,7 +29,9 @@ help:
 	  'make mutants       mutation testing for Rust and core' \
 	  'make security      gitleaks, cargo-deny advisories, pip-audit' \
 	  'make duplicates    clones: repeated blocks of Python and Rust' \
-	  'make hooks         lint, type check and test the agent hooks in scripts/' \
+	  'make hooks         lint, type check and test the agent hooks and browser tests' \
+	  'make js            Biome: lint and format check of the web components' \
+	  'make browser       Playwright: the web components in Chromium (system up)' \
 	  'make css           build the stylesheet of core once (Tailwind CLI)' \
 	  'make up            start the whole system' \
 	  'make down          stop the whole system' \
@@ -115,10 +118,26 @@ duplicates:
 
 .PHONY: hooks
 hooks:
-	$(UVX) ruff@$(call LOCKED,ruff) check --no-fix scripts
-	$(UVX) ruff@$(call LOCKED,ruff) format --check scripts
+	$(UVX) ruff@$(call LOCKED,ruff) check --no-fix scripts tests/browser
+	$(UVX) ruff@$(call LOCKED,ruff) format --check scripts tests/browser
 	cd scripts && $(UVX) --with pytest==$(call LOCKED,pytest) mypy@$(call LOCKED,mypy) --strict .
+	cd tests/browser && $(UVX) --with pytest==$(call LOCKED,pytest) \
+	  --with playwright==$(PLAYWRIGHT) mypy@$(call LOCKED,mypy) --strict .
 	cd scripts && $(UVX) pytest@$(call LOCKED,pytest) -q -p no:cacheprovider
+
+.PHONY: js
+js:
+	biome ci
+
+.PHONY: browser
+browser:
+	docker build -q -t monolith-first-browser \
+	  --build-arg PLAYWRIGHT=$(PLAYWRIGHT) \
+	  --build-arg PYTEST=$(call LOCKED,pytest) tests/browser
+	docker run --rm --network host --user "$$(id -u):$$(id -g)" \
+	  -e HOME=/tmp -e CORE_URL="$${CORE_URL:-http://localhost:8000}" \
+	  -v "$$PWD/tests/browser:/tests:ro" monolith-first-browser \
+	  python -m pytest -q -p no:cacheprovider
 
 .PHONY: mutants
 mutants: mutants-rust mutants-core
@@ -154,6 +173,7 @@ down:
 .PHONY: e2e
 e2e: up
 	./scripts/e2e.sh
+	$(MAKE) browser
 
 .PHONY: commitlint
 commitlint:
@@ -169,5 +189,5 @@ release-notes:
 	@git-cliff --latest --strip header
 
 .PHONY: check
-check: commitlint security contracts architecture hooks duplicates rust core mutants e2e
+check: commitlint security contracts architecture hooks js duplicates rust core mutants e2e
 	$(MAKE) down
