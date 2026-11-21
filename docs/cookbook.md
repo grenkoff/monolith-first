@@ -620,10 +620,25 @@ Rust (sqlx):
 Once the first real module exists, in its own pull request:
 
 1. `services/core/server/apps/catalog/` and `server/apps/orders/`, their
-   lines in `INSTALLED_APPS`, their routers in `server/urls.py`,
-   `server/composition/catalog.py` and `orders.py` with their calls in
-   `server/implemented.py`, the `OrderPlaced` subscription in
-   `server/composition/outbox.py`, their tests in
+   lines in `INSTALLED_APPS`, their API routers and page routes in
+   `server/urls.py`, `server/composition/catalog.py` and `orders.py`
+   with their calls in `server/implemented.py`, the `OrderPlaced`
+   subscription in `server/composition/outbox.py`, their tests in
    `tests/test_apps/test_catalog/` and `tests/test_apps/test_orders/`.
-2. The requests of `scripts/e2e.sh`: point them at the new module.
-3. `make patterns`, `make check`.
+2. The `images` service, unless the product keeps photos:
+   `services/images/` and its workspace member, `proto/images/` and the
+   generated `server/contracts/images/` (`make proto`), the service and
+   `IMAGES_GRPC_ADDR` in `compose.yml`, `server/settings/components/services.py`
+   with its line in `server/settings/__init__.py` and the `IMAGES_*` lines
+   of `config/.env.template`, `grpcio`, `protobuf` and their stubs
+   (`poetry remove`), the Docker directory in `.github/dependabot.yml`.
+3. The Rust extension module, unless the product needs heavy computation:
+   `services/core/native/`, the `native_build` stage and the wheel lines
+   of `docker/django/Dockerfile`, the `NATIVE` lines of the `Makefile`,
+   its Dependabot directory, `ranking` in `known_first_party` of
+   `pyproject.toml`, the `target-lexicon` exception of `deny.toml` and
+   the `exclude` of the root `Cargo.toml`.
+4. The checks that walk the example: the requests of `scripts/e2e.sh`
+   and the product page of `tests/browser/` (the theme switcher stays);
+   point them at the new module.
+5. `make patterns`, `make check`.
