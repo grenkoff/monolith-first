@@ -1,0 +1,13 @@
+[build-system]
+requires = ["maturin>=1.16,<2"]
+build-backend = "maturin"
+
+[project]
+name = "ranking"
+version = "0.1.0"
+description = "Ranks names by their resemblance to a query, for the catalog of core"
+requires-python = ">=3.14"
+license = "MIT"
+
+[tool.maturin]
+features = ["python", "pyo3/extension-module"]
