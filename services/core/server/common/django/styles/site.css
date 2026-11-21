@@ -24,6 +24,10 @@
   --shadow-card: var(--ds-shadow-card);
 }
 
+@view-transition {
+  navigation: auto;
+}
+
 @layer base {
   body {
     @apply bg-surface font-body text-ink antialiased;
