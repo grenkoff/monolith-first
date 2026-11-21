@@ -92,3 +92,5 @@ pip-audit-cache/
 release.config.js
 
 .venv/
+
+native/target/
