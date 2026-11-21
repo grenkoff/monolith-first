@@ -1,0 +1,2 @@
+exclude_globs = ["src/python.rs"]
+gitignore = true

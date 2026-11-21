@@ -22,11 +22,80 @@ impl Phrase {
 
 impl Resembled for Phrase {
     fn resemblance(&self, other: &str) -> f64 {
-        if self.text.is_empty() && other.is_empty() {
-            1.0
-        } else {
-            0.5
+        let query = Words::new(&self.text);
+        let name = Words::new(other);
+        let wanted = query.list();
+        let offered = name.list();
+        if wanted.is_empty() || offered.is_empty() {
+            return 0.0;
         }
+        let total: f64 = wanted
+            .iter()
+            .map(|word| {
+                offered
+                    .iter()
+                    .map(|candidate| Word::new(word).resemblance(candidate))
+                    .fold(0.0, f64::max)
+            })
+            .sum();
+        total / f64::from(u32::try_from(wanted.len()).unwrap_or(u32::MAX))
+    }
+}
+
+/// Words of a text, in lower case.
+struct Words<'text> {
+    /// Text to split.
+    text: &'text str,
+}
+
+impl<'text> Words<'text> {
+    /// Creates the words of a text.
+    const fn new(text: &'text str) -> Self {
+        Self { text }
+    }
+
+    /// Returns the words in lower case.
+    fn list(&self) -> Vec<String> {
+        self.text
+            .split_whitespace()
+            .map(str::to_lowercase)
+            .collect()
+    }
+}
+
+/// One word, compared letter by letter.
+struct Word<'text> {
+    /// Letters of the word.
+    text: &'text str,
+}
+
+impl<'text> Word<'text> {
+    /// Creates a word.
+    const fn new(text: &'text str) -> Self {
+        Self { text }
+    }
+}
+
+impl Resembled for Word<'_> {
+    fn resemblance(&self, other: &str) -> f64 {
+        let mine: Vec<char> = self.text.chars().collect();
+        let theirs: Vec<char> = other.chars().collect();
+        let longest = mine.len().max(theirs.len());
+        let mut row: Vec<usize> = (0..=theirs.len()).collect();
+        for (index, letter) in mine.iter().enumerate() {
+            let mut diagonal = row[0];
+            row[0] = index + 1;
+            for (column, candidate) in theirs.iter().enumerate() {
+                let above = row[column + 1];
+                row[column + 1] = (above + 1)
+                    .min(row[column] + 1)
+                    .min(diagonal + usize::from(letter != candidate));
+                diagonal = above;
+            }
+        }
+        let distance = u32::try_from(row[theirs.len()]).unwrap_or(u32::MAX);
+        let length = u32::try_from(longest).unwrap_or(u32::MAX);
+        1.0 - f64::from(distance) / f64::from(length)
     }
 }
 
