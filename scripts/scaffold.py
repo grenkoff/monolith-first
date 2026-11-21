@@ -1,5 +1,6 @@
 """Creates a module of core with every layer: `make module NAME=<name>`."""
 
+import ast
 import re
 import sys
 from pathlib import Path
@@ -8,17 +9,8 @@ from typing import Final, final
 _APPS: Final = Path('services/core/server/apps')
 _SETTINGS: Final = Path('services/core/server/settings/components/common.py')
 _NAME: Final = re.compile(r'^[a-z][a-z0-9_]*$')
-_TECHNICAL: Final = frozenset((
-    'api',
-    'auth',
-    'common',
-    'core',
-    'helpers',
-    'infra',
-    'logging',
-    'shared',
-    'utils',
-))
+_CHECK: Final = Path('services/core/scripts/modules.py')
+_TECHNICAL: Final = '_TECHNICAL'
 _PACKAGES: Final = (
     '',
     'api',
@@ -52,7 +44,7 @@ class Module:
 
     def created(self) -> list[Path]:
         """Creates the packages of the module, installs it, returns the files."""
-        if not _NAME.match(self._name) or self._name in _TECHNICAL:
+        if not _NAME.match(self._name) or self._name in self._technical():
             raise UnfitNameError(
                 f'`{self._name}` is not the name of a business domain',
             )
@@ -75,6 +67,19 @@ class Module:
             ),
         )
         return [*files, models]
+
+    def _technical(self) -> frozenset[str]:
+        """Returns the names of technical layers, as the module check lists them."""
+        tree = ast.parse((self._root / _CHECK).read_text(encoding='utf-8'))
+        for node in tree.body:
+            if (
+                isinstance(node, ast.AnnAssign)
+                and isinstance(node.target, ast.Name)
+                and node.target.id == _TECHNICAL
+                and isinstance(node.value, ast.Call)
+            ):
+                return frozenset(ast.literal_eval(node.value.args[0]))
+        return frozenset()
 
 
 if __name__ == '__main__':
