@@ -2,7 +2,7 @@
 
 from dmr.routing import Router, path
 
-from server.apps.catalog.api import views
+from server.apps.catalog.api import photos, views
 
 router = Router(
     'catalog/',
@@ -12,6 +12,11 @@ router = Router(
             'products/<uuid:id>/',
             views.ProductGet.as_view(),
             name='product_get',
+        ),
+        path(
+            'products/<uuid:id>/photo/',
+            photos.ProductPhoto.as_view(),
+            name='product_photo',
         ),
     ],
 )

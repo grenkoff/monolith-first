@@ -423,6 +423,7 @@ paths = ["server", "scripts"]
 exclude = ["server/settings/", "server/contracts/", "migrations/"]
 ignore_names = [
   "post",
+  "put",
   "handle",
   "help",
   "Command",
