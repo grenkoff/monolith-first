@@ -20,6 +20,7 @@ from dmr.routing import Router, build_404_handler, build_500_handler, path
 from health_check.views import HealthCheckView
 
 from server.apps.catalog.api import urls as catalog_api_urls
+from server.apps.catalog.views import urls as catalog_page_urls
 from server.apps.orders.api import urls as orders_api_urls
 
 admin.autodiscover()
@@ -70,6 +71,8 @@ urlpatterns = [
         staff_member_required(RedocView.as_view(schema_v1)),
         name='v1_redoc',
     ),
+    # Pages:
+    path('', include(catalog_page_urls)),
     # Health checks:
     path(
         'health/',
