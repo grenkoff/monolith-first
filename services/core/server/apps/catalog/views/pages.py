@@ -15,7 +15,7 @@ from server.common.money import Cents
 
 @final
 class Home(HasContainer, View):
-    """Home page: the products on sale."""
+    """Home page that lists the products on sale."""
 
     def get(self, request: HttpRequest) -> HttpResponse:
         """Renders the products on sale with their prices."""
