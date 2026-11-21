@@ -28,6 +28,7 @@ help:
 	  'make security      gitleaks, cargo-deny advisories, pip-audit' \
 	  'make duplicates    clones: repeated blocks of Python and Rust' \
 	  'make hooks         lint, type check and test the agent hooks in scripts/' \
+	  'make css           build the stylesheet of core once (Tailwind CLI)' \
 	  'make up            start the whole system' \
 	  'make down          stop the whole system' \
 	  'make e2e           check a request through every service' \
@@ -39,6 +40,12 @@ help:
 .PHONY: doctor
 doctor:
 	./scripts/doctor.sh
+
+.PHONY: css
+css: env
+	$(COMPOSE) run --rm --no-deps core-css --minify \
+	  --input=server/common/django/styles/site.css \
+	  --output=server/common/django/static/site/site.css
 
 .PHONY: setup
 setup: env

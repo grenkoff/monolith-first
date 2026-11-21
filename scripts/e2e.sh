@@ -13,6 +13,16 @@ product="$(curl -fsS -X POST "$core/api/v1/catalog/products/" \
 id="$(echo "$product" | python3 -c 'import json, sys; print(json.load(sys.stdin)["id"])')"
 echo "product $id"
 
+if ! curl -fsS "$core/" | grep -q "$name"; then
+  echo "FAIL: the home page does not list the product"
+  exit 1
+fi
+if ! curl -fsS "$core/static/site/site.css" | grep -q 'tailwindcss'; then
+  echo "FAIL: the stylesheet was not built by the Tailwind CLI"
+  exit 1
+fi
+echo "OK: the home page lists the product, the stylesheet is built"
+
 curl -fsS -X POST "$core/api/v1/orders/" \
   -H 'Content-Type: application/json' \
   -d "{\"product\": \"$id\", \"quantity\": 3}"

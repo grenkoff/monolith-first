@@ -61,6 +61,21 @@ RUN apt-get update && apt-get upgrade -y \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
+ENV TAILWIND_VERSION=4.3.5
+
+RUN dpkgArch="$(dpkg --print-architecture | awk -F- '{ print $NF }')" \
+  && case "$dpkgArch" in \
+    amd64) asset='tailwindcss-linux-x64' ;; \
+    arm64) asset='tailwindcss-linux-arm64' ;; \
+    *) echo "no Tailwind CLI for $dpkgArch" && exit 1 ;; \
+  esac \
+  && base="https://github.com/tailwindlabs/tailwindcss/releases/download/v${TAILWIND_VERSION}" \
+  && curl -sSfL -o "/tmp/$asset" "$base/$asset" \
+  && curl -sSfL "$base/sha256sums.txt" | grep " ./$asset$" \
+    | sed "s# ./# /tmp/#" | sha256sum --check \
+  && install -m 0755 "/tmp/$asset" /usr/local/bin/tailwindcss \
+  && rm "/tmp/$asset"
+
 WORKDIR /code
 
 RUN groupadd -g "${GID}" -r web \
@@ -102,3 +117,6 @@ ENTRYPOINT ["tini", "--", "/docker-entrypoint.sh"]
 # https://wemake-services.github.io/wemake-django-template/pages/template/production.html
 FROM development_build AS production_build
 COPY --chown=web:web . /code
+RUN tailwindcss --minify \
+  --input server/common/django/styles/site.css \
+  --output server/common/django/static/site/site.css
