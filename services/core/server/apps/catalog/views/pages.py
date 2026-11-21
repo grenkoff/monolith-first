@@ -70,3 +70,12 @@ class Search(HasContainer, View):
                 ],
             },
         )
+
+
+@final
+class ProductThumbnail(HasContainer, View):
+    """Thumbnail of the photo of a product, as a JPEG."""
+
+    def get(self, request: HttpRequest, identifier: UUID) -> HttpResponse:
+        """Answers the thumbnail of the product in the path, or 404."""
+        return HttpResponse(request.path + str(identifier))

@@ -5,5 +5,6 @@ pytest_plugins = [
     'plugins.django_settings',
     'plugins.tracecov_map',
     'plugins.hypothesis_profiles',
+    'plugins.images_server',
     # TODO: add your own plugins here!
 ]

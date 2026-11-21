@@ -12,4 +12,9 @@ urlpatterns = [
         name='product',
     ),
     path('search/', pages.Search.as_view(), name='search'),
+    path(
+        'products/<uuid:identifier>/thumbnail.jpg',
+        pages.ProductThumbnail.as_view(),
+        name='thumbnail',
+    ),
 ]

@@ -1,10 +1,13 @@
 """Objects of the catalog, built for the composition root."""
 
 import punq
+from django.conf import settings
 
-from server.apps.catalog.infra import products, ranking
+from server.apps.catalog.infra import photos, products, ranking, remote
 from server.apps.catalog.logic.usecases import (
     add_product,
+    attach_photo,
+    find_photo,
     find_product,
     list_products,
     search_products,
@@ -33,5 +36,18 @@ def inject(container: punq.Container) -> Catalog:
             stored,
             ranking.RustSimilarity(),
         ),
+    )
+    album = photos.StoredPhotos()
+    container.register(
+        attach_photo.AttachPhoto,
+        instance=attach_photo.AttachPhoto(
+            stored,
+            remote.RemoteThumbnails(settings),
+            album,
+        ),
+    )
+    container.register(
+        find_photo.FindPhoto,
+        instance=find_photo.FindPhoto(album),
     )
     return stored
