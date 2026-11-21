@@ -20,6 +20,7 @@ _base_settings = (
     'components/caches.py',
     'components/api.py',
     'components/outbox.py',
+    'components/services.py',
     # Select the right env:
     f'environments/{_ENV}.py',
     # Optionally override some settings:
