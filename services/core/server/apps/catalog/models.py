@@ -48,3 +48,23 @@ class Sale(models.Model):
     def __str__(self) -> str:
         """Returns the id of the event that reported the sale."""
         return str(self.id)
+
+
+@final
+class Photo(models.Model):
+    """Thumbnail of the photo of a product, as JPEG bytes."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid7, editable=False)
+    product = models.OneToOneField(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='photo',
+    )
+    image = models.BinaryField()
+    width = models.PositiveIntegerField()
+    height = models.PositiveIntegerField()
+
+    @override
+    def __str__(self) -> str:
+        """Returns the name of the product of the photo."""
+        return str(self.product_id)
