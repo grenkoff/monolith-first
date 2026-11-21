@@ -334,10 +334,15 @@ JavaScript; JavaScript only improves them (progressive enhancement).
    JavaScript with Web APIs (`fetch`, `IntersectionObserver`,
    `localStorage`). A library is never the answer.
 2. **Web components** for any behaviour in the browser: one custom element
-   per file in `static/components/`, a plain ES module with no imports
-   from outside the project, named `<project>-<thing>`. A component reads
-   its data from its attributes and its children, so the page works
-   before it loads.
+   per file in `static/components/<element>.js`, a plain ES module with
+   no imports from outside the project, named `site-<thing>`. A component
+   enhances markup the server already rendered and reads its data from
+   its attributes and children, so the page works before it loads and
+   without JavaScript. A template loads it with
+   `<script type="module" src="{% static 'components/<element>.js' %}">`;
+   no inline scripts, no `on*=` attributes. Examples: `site-theme`
+   (theme switcher, `localStorage`, View Transitions) and `site-total`
+   (live total, `Intl.NumberFormat`, constraint validation).
 3. **One design system.** Every page is built from its components and
    styled only by its tokens (colours, fonts, spacing, radii, shadows) as
    Tailwind classes; no colour, size or font written by hand in a
@@ -349,6 +354,13 @@ JavaScript; JavaScript only improves them (progressive enhancement).
    component in every theme: `/design/`.
 5. **Accessible by default**: semantic HTML, labels on every control,
    keyboard focus visible, contrast of the tokens checked.
+
+Machine-enforced for browser code: `scripts/components.py` (in
+`make core`) rejects JavaScript outside `static/components/`, a file
+that does not define its own element, imports from outside the project
+and inline or foreign scripts in templates; Biome lints and formats it
+(`make js`); Playwright tests it in Chromium (`make browser`, from its
+official Docker image, so nothing is installed on the machine).
 
 Machine-enforced: Tailwind knows only the tokens (its default palette,
 fonts, radii and shadows are switched off), and `scripts/design.py`
@@ -731,6 +743,7 @@ has no failing test behind it; if it blocks, write the test and run it.
 | Level | Python (`core`) | Rust | Runs in |
 |-------|-----------------|------|---------|
 | Unit | `services/core/tests/`, mirrors `server/` | `#[cfg(test)] mod tests` next to the code | `make core`, `make rust` |
+| Browser | `tests/browser/`: web components in Chromium through Playwright | — | `make browser` (in `make e2e`) |
 | Integration | PostgreSQL from the Compose file of `core`; an in-process fake gRPC server and NATS once a service is extracted | `tests/` of the crate; NATS and PostgreSQL in Docker (testcontainers) | same |
 | API contract | schemathesis + tracecov against the OpenAPI schema | — | `make core` |
 | End-to-end | `scripts/e2e.sh` through every service | same | `make e2e` |
@@ -1162,8 +1175,8 @@ a pull request merges only with every required job green.
 | rust-mutants | cargo-mutants: zero survivors |
 | core | the wemake-django-template pipeline (ruff, wemake-python-styleguide, mypy, import-linter, pytest, schemathesis, Django checks, migration linters, deptry), pip-audit, vulture, transaction check, coverage (80% overall, 100% in `logic/`), mutmut |
 | core-ty | ty (non-blocking: reported, never fails the pull request) |
-| tooling | `make hooks` (ruff, mypy and pytest for `scripts/`), `make duplicates` (`clones`) |
-| e2e | `make up` and a request through every service |
+| tooling | `make hooks` (ruff, mypy and pytest for `scripts/` and `tests/browser/`), `make js` (Biome), `make duplicates` (`clones`) |
+| e2e | `make up`, a request through every service and the browser tests (`make browser`) |
 
 When CI is red:
 
@@ -1224,6 +1237,7 @@ Required tools (`make doctor` checks them and prints what is missing):
 | git-cliff (`cargo install git-cliff --locked`) | the changelog of a release |
 | buf | contracts |
 | gitleaks | secret scanning |
+| biome (standalone binary) | lint and format of the web components |
 
 Setup from a fresh clone:
 
@@ -1263,7 +1277,9 @@ so local runs match CI.
 | `make ty` | ty for `core` (non-blocking) |
 | `make mutants` | cargo-mutants and mutmut: zero survivors |
 | `make security` | gitleaks, pip-audit, cargo-deny advisories |
-| `make hooks` | ruff, mypy and pytest for the agent hooks in `scripts/` |
+| `make hooks` | ruff, mypy and pytest for the agent hooks in `scripts/`, ruff and mypy for `tests/browser/` |
+| `make js` | Biome over the web components |
+| `make browser` | Playwright tests of the web components against the running system |
 | `make duplicates` | `clones` over Python and Rust |
 | `make css` | builds the stylesheet of `core` once with the Tailwind CLI |
 | `make up` / `make down` | starts / stops the whole system; the site is on http://localhost:8000 |

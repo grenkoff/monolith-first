@@ -71,6 +71,28 @@ Example: the product page `GET /products/<id>/` in `server/apps/catalog/`.
 6. `make up` shows it at once: `core-css` rebuilds the stylesheet when a
    template uses a new class; `make css` builds it once.
 
+## Add a web component
+
+Example: `site-total`, the live total of the product page.
+
+1. The page first: render with the server everything the component
+   needs (the price, the quantity field, the `<output>` with the
+   total for one item) inside `<site-<thing> data-or-attributes>`; the
+   page must work without JavaScript. Pin that markup in a page test.
+2. Red: a browser test in `tests/browser/` with Playwright
+   (`page.get_by_label(...).fill(...)`, `expect(...).to_have_text(...)`)
+   against the running system: `make up`, then `make browser`.
+3. Green: `server/common/django/static/components/site-<thing>.js`, a
+   class that extends `HTMLElement`, works in `connectedCallback`, uses
+   Web APIs (`Intl`, `localStorage`, `fetch`, `dialog`) and ends with
+   `customElements.define('site-<thing>', ...)`. No imports but relative
+   ones, no libraries.
+4. Load it from the template:
+   `<script type="module" src="{% static 'components/site-<thing>.js' %}"></script>`
+   in the `scripts` block.
+5. `make js` (Biome) and `make core` (`scripts/components.py`) must be
+   green.
+
 ## Add a Django app
 
 1. `server/apps/<app>/` with `__init__.py`, and only the layers it needs:
