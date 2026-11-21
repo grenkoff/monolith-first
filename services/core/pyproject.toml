@@ -382,6 +382,7 @@ DEP004 = [
 # codespell configuration: https://pypi.org/project/codespell
 skip = '''__pycache__,
 server/contracts,
+native/target,
 mutants,
 tracecov-report.*,
 */_build,
@@ -399,6 +400,7 @@ coverage.xml'''
 # typos configuration: https://github.com/crate-ci/typos/
 files.extend-exclude = [
   "server/contracts",
+  "native/target",
   "tracecov-report.*",
   "mutants",
   "__pycache__",
