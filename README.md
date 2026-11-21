@@ -1,10 +1,12 @@
-# polyglot-backend-template
+# monolith-first
 
-A starting point for backend projects built by AI agents and humans: a
-**Django** modular monolith that moves a module into a **Rust** service
-only when it has to, written in
+A starting point for web projects built by AI agents and humans: a
+**Django** modular monolith with server-rendered pages, **Python** and
+**Rust** working together, a module moving into a **Rust** service only
+when it has to, written in
 [Elegant Objects](https://www.elegantobjects.org/) style and checked by
-strict CI.
+strict CI. Tell the agent "make me a website for a barbershop": it plans,
+asks the key questions and builds a working version.
 
 | | |
 |---|---|
@@ -14,13 +16,14 @@ strict CI.
 | Extracted services | Rust: [axum](https://github.com/tokio-rs/axum), [tonic](https://github.com/hyperium/tonic), [async-nats](https://github.com/nats-io/nats.rs) |
 | Rust style | Elegant Objects on 100%: clippy pedantic + [`eo-lint`](tools/eo-lint) |
 | Communication | between modules: facades and an outbox of events; between services: gRPC contracts in [`proto/`](proto) ([buf](https://buf.build)) and events over [NATS](https://nats.io) |
+| Frontend | Django templates, [Tailwind CSS](https://tailwindcss.com), web components in plain JavaScript and browser Web APIs; no JavaScript framework, no Node.js |
 | Runtime | Docker Compose, PostgreSQL |
 
 ## Start a new project
 
 ```bash
-gh repo create my-backend --template grenkoff/polyglot-backend-template --private --clone
-cd my-backend
+gh repo create my-site --template grenkoff/monolith-first --private --clone
+cd my-site
 make doctor   # lists the tools that are missing
 make setup    # installs Node tooling, the Rust toolchain and the core venv
 make env      # creates services/core/config/.env
