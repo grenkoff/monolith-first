@@ -22,6 +22,7 @@ from health_check.views import HealthCheckView
 from server.apps.catalog.api import urls as catalog_api_urls
 from server.apps.catalog.views import urls as catalog_page_urls
 from server.apps.orders.api import urls as orders_api_urls
+from server.apps.orders.views import urls as orders_page_urls
 
 admin.autodiscover()
 
@@ -73,6 +74,7 @@ urlpatterns = [
     ),
     # Pages:
     path('', include(catalog_page_urls)),
+    path('', include(orders_page_urls)),
     # Health checks:
     path(
         'health/',
