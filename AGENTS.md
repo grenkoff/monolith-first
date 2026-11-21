@@ -147,10 +147,11 @@ monolith was built for it, so every module is kept ready to leave.
 | `core` | Python, Django | the monolith: every module, the only public HTTP API, auth, admin |
 | `db` | — | PostgreSQL of `core` |
 | `core-relay` | Python, Django | the same image as `core`: delivers events from the outbox after commit |
+| `core-css` | Tailwind CLI | the same image as `core`: rebuilds the stylesheet while the system runs locally |
 | `<name>` | Rust | a module extracted into its own service |
 | `nats` | — | message broker, from the first extracted service on |
 
-The template runs only `core`, `core-relay` and `db`. The Rust workspace,
+The template runs only `core`, `core-relay`, `core-css` and `db`. The Rust workspace,
 `eo-lint`, the `contracts` crate and buf stay ready and checked in CI with
 no service, so the first module that leaves starts from green tooling.
 
@@ -345,6 +346,16 @@ JavaScript; JavaScript only improves them (progressive enhancement).
 5. **Accessible by default**: semantic HTML, labels on every control,
    keyboard focus visible, contrast of the tokens checked.
 
+Where it lives: a module renders its pages in `views/pages.py` (Django
+views, routed in `views/urls.py` and included in `server/urls.py` under
+the namespace of the module) from templates in `templates/<module>/`;
+every page extends `layout/base.html` of
+`server/common/django/templates/`. The stylesheet
+`server/common/django/styles/site.css` is built by the Tailwind
+standalone CLI into `static/site/site.css`, which git ignores: by
+`core-css` while `make up` runs, by `make css` once, and in the
+production image.
+
 Elegant Objects apply to JavaScript where the platform allows: a custom
 element extends `HTMLElement`, as the platform dictates; everything else
 follows the rules, comments and directives are forbidden as everywhere.
@@ -394,7 +405,7 @@ Layers:
 
 | Service | Layers, outer to inner | Enforced by |
 |---------|------------------------|-------------|
-| `core` (Python), in each module | `api` → `infra` → `models` → `logic` → `public`; only `infra` imports the `public` of another module | import-linter (`services/core/.importlinter`) |
+| `core` (Python), in each module | `api` and `views` (pages) → `infra` → `models` → `logic` → `public`; only `infra` imports the `public` of another module | import-linter (`services/core/.importlinter`) |
 | Extracted Rust services | `api` (tonic, axum) → `infra` (sqlx, async-nats) → `domain`; `main.rs` wires them | `eo-lint` rule EO010 |
 
 `public` is the innermost layer of a module: it imports nothing else of its
@@ -761,6 +772,14 @@ Every task starts and ends the same way:
   who merges it.
 
 Step-by-step recipes live in `docs/cookbook.md` (`/cookbook`); in short:
+
+**Add a page**
+1. Red/green in `tests/test_apps/<app>/test_views/`: status codes and the
+   texts a visitor sees.
+2. A view in `views/pages.py` resolves a use case and renders
+   `templates/<app>/<page>.html`, which extends `layout/base.html`.
+3. Route it in `views/urls.py`, include it in `server/urls.py` under the
+   namespace of the module.
 
 **Add an HTTP endpoint to `core`**
 1. Value objects for the request and the response in `logic/value_objects.py`
@@ -1225,7 +1244,8 @@ so local runs match CI.
 | `make security` | gitleaks, pip-audit, cargo-deny advisories |
 | `make hooks` | ruff, mypy and pytest for the agent hooks in `scripts/` |
 | `make duplicates` | `clones` over Python and Rust |
-| `make up` / `make down` | starts / stops the whole system |
+| `make css` | builds the stylesheet of `core` once with the Tailwind CLI |
+| `make up` / `make down` | starts / stops the whole system; the site is on http://localhost:8000 |
 | `make logs` | follows the logs of the running system |
 | `make e2e` | starts the system and sends a request through every service |
 | `make commitlint` | checks the last commit (or `RANGE=<from>..<to>`) against Conventional Commits |

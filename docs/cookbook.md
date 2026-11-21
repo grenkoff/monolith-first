@@ -47,6 +47,29 @@ Example: `POST /api/v1/orders/` in `server/apps/orders/`.
 8. `make core`: schemathesis and tracecov must cover the new operation and
    each declared response.
 
+## Add a page
+
+Example: the product page `GET /products/<id>/` in `server/apps/catalog/`.
+
+1. Red: a page test in `tests/test_apps/test_<app>/test_views/` with the
+   Django test client: the status code and the texts a visitor must see
+   (`test_product_pages.py`); one test per error status.
+2. The data comes from a use case in `logic/usecases/`, as for an endpoint;
+   a page never reads models directly.
+3. A Django view in `views/pages.py`: `HasContainer` first, then `View`;
+   `get` (and `post` for a form) resolves the use case and renders a
+   template; a domain error becomes `Http404` or a page with its status.
+   Amounts of money go through `server.common.money.Cents`.
+4. The template in `templates/<app>/<page>.html` extends
+   `layout/base.html` and fills `content` (and `title`). It is styled only
+   with Tailwind classes; forms carry `{% csrf_token %}`, labels and HTML
+   validation (`required`, `min`), and work without JavaScript.
+5. Route it in `views/urls.py` and include the list in `server/urls.py`
+   with the namespace of the module:
+   `path('', include((catalog_page_urls.urlpatterns, 'catalog')))`.
+6. `make up` shows it at once: `core-css` rebuilds the stylesheet when a
+   template uses a new class; `make css` builds it once.
+
 ## Add a Django app
 
 1. `server/apps/<app>/` with `__init__.py`, and only the layers it needs:
@@ -54,7 +77,8 @@ Example: `POST /api/v1/orders/` in `server/apps/orders/`.
    `models.py`, `admin.py`, and `public/` once another module needs it.
 2. Add `'server.apps.<app>'` to `INSTALLED_APPS` in
    `server/settings/components/common.py`.
-3. Include its router in `server/urls.py`.
+3. Include its router in `server/urls.py`, and its pages when it has
+   `views/` (see "Add a page").
 4. The contracts in `services/core/.importlinter` cover every app through
    `server.apps.*`; `lint-imports` (in `make core`) proves the new app
    imports downwards only, and from other apps only their `public/`, from
