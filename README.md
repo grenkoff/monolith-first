@@ -39,7 +39,8 @@ Then tell your AI agent what to build. It reads [`AGENTS.md`](AGENTS.md)
 ```
 proto/               gRPC contracts of extracted services (none yet)
 contracts/           Rust crate generated from proto/
-services/core/       the Django monolith (public HTTP API, admin, database)
+services/core/       the Django monolith (pages, public HTTP API, admin, database)
+services/core/native the Rust extension module of the monolith (PyO3, maturin)
 tools/eo-lint/       Elegant Objects linter for Rust
 tools/commit-lint/   commit message checker
 tools/clones/        finder of repeated code

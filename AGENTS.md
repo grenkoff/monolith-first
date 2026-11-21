@@ -71,6 +71,7 @@ all of them, including the GitHub settings):
 | `proto/` | gRPC contracts, the single source of truth between services |
 | `contracts/` | Rust crate with the code generated from `proto/`; every Rust service depends on it |
 | `services/core/` | the monolith: every module, the public HTTP API, admin, its database |
+| `services/core/native/` | Rust extension module of `core` (PyO3, maturin): the resemblance of names behind the catalog search |
 | `services/<name>/` | modules extracted into Rust services; none until a module has to leave |
 | `tools/eo-lint/` | Elegant Objects linter for Rust |
 | `tools/commit-lint/` | checks commit messages: Conventional Commits, one line |
@@ -830,6 +831,17 @@ Step-by-step recipes live in `docs/cookbook.md` (`/cookbook`); in short:
    one logical change per migration, backward compatible (see
    "Migrations").
 2. Rust: `sqlx migrate add <name>`, plain SQL, same rules.
+
+**Move a computation to Rust inside the monolith** (only when Python is
+too slow for it)
+1. Red/green in Rust: the computation in `services/core/native/src/domain/`,
+   pure and fully covered.
+2. The binding in `src/python.rs`: a `#[pyclass(frozen)]` with `#[new]`
+   and `__call__`, exported by `#[pymodule]`, and its types in
+   `ranking.pyi`; maturin builds it into the image of `core`.
+3. The module of `core` declares a protocol in `logic/`, the adapter in
+   `infra/` calls the extension, the use case is tested with a fake and
+   the adapter against the real extension.
 
 **Extract a module into a service** (only when a split criterion of
 "Architecture" holds, and after the human agrees)
