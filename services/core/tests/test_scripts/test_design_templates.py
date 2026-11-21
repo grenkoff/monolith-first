@@ -31,6 +31,12 @@ def test_template_problem_names_the_file_and_line() -> None:
     ]
 
 
+def test_style_attribute_is_named() -> None:
+    assert _template('<p style="color: red">x</p>') == [
+        'page.html:1: `style` is outside the design system',
+    ]
+
+
 def test_template_of_tokens_and_components_passes() -> None:
     markup = (
         '<p class="ds-card mt-4 grid gap-2 bg-surface text-ink-muted '
