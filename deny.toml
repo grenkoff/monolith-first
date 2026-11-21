@@ -9,6 +9,10 @@ yanked = "deny"
 allow = ["Apache-2.0", "BSD-3-Clause", "ISC", "MIT", "Unicode-3.0", "Zlib"]
 confidence-threshold = 0.93
 
+[[licenses.exceptions]]
+crate = "target-lexicon"
+allow = ["Apache-2.0 WITH LLVM-exception"]
+
 [licenses.private]
 ignore = true
 

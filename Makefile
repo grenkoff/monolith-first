@@ -1,6 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 CORE := services/core
+NATIVE := $(CORE)/native
 COMPOSE := env UID=$(shell id -u) GID=$(shell id -g) docker compose
 PYTHON_VERSION := $(shell cat $(CORE)/.python-version)
 POETRY_VERSION := $(shell sed -n "s/.*POETRY_VERSION=\([0-9.]*\).*/\1/p" $(CORE)/docker/django/Dockerfile)
@@ -89,13 +90,17 @@ patterns:
 .PHONY: rust
 rust:
 	cargo fmt --all --check
+	cargo fmt --manifest-path $(NATIVE)/Cargo.toml --check
 	cargo clippy --workspace --all-targets --locked
+	cargo clippy --manifest-path $(NATIVE)/Cargo.toml --all-targets --all-features --locked
 	cargo llvm-cov --workspace --locked \
 	  --ignore-filename-regex $(RUST_COVERAGE_IGNORE) --fail-under-lines 80
 	./scripts/domain-coverage.sh
+	cd $(NATIVE) && cargo llvm-cov --locked --fail-under-lines 100
 	cargo run -q -p eo-lint -- services tools
 	cargo machete
 	cargo deny --locked check
+	cargo deny --manifest-path $(NATIVE)/Cargo.toml --locked --all-features check
 
 .PHONY: security
 security: env
@@ -121,6 +126,7 @@ mutants: mutants-rust mutants-core
 .PHONY: mutants-rust
 mutants-rust:
 	cargo mutants --workspace
+	cargo mutants --dir $(NATIVE)
 
 .PHONY: mutants-core
 mutants-core: env

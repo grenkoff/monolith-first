@@ -94,3 +94,4 @@ release.config.js
 .venv/
 
 native/target/
+native/mutants.out*/

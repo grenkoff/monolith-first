@@ -13,3 +13,4 @@ __pycache__/
 .env
 /services/core/server/common/django/static/site/site.css
 /services/core/native/target/
+/services/core/native/mutants.out*/
