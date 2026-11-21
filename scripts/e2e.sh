@@ -25,6 +25,36 @@ if [[ "$stylesheet" != *tailwindcss* ]]; then
 fi
 echo "OK: the home page lists the product, the stylesheet is built"
 
+photo="$(python3 - <<'PNG'
+import base64, struct, zlib
+width, height = 640, 320
+rows = b''.join(b'\x00' + bytes((200, 60, 40)) * width for _ in range(height))
+def chunk(kind, data):
+    body = kind + data
+    return struct.pack('>I', len(data)) + body + struct.pack('>I', zlib.crc32(body))
+png = b''.join((
+    b'\x89PNG\r\n\x1a\n',
+    chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0)),
+    chunk(b'IDAT', zlib.compress(rows)),
+    chunk(b'IEND', b''),
+))
+print(base64.b64encode(png).decode())
+PNG
+)"
+size="$(curl -fsS -X PUT "$core/api/v1/catalog/products/$id/photo/" \
+  -H 'Content-Type: application/json' \
+  -d "{\"image\": \"$photo\"}")"
+if [[ "$size" != '{"width":480,"height":240}' ]]; then
+  echo "FAIL: the images service did not make a 480x240 thumbnail: $size"
+  exit 1
+fi
+kind="$(curl -fsS -o /dev/null -w '%{content_type}' "$core/products/$id/thumbnail.jpg")"
+if [[ "$kind" != image/jpeg ]]; then
+  echo "FAIL: the thumbnail is served as $kind"
+  exit 1
+fi
+echo "OK: the photo went through core -> images over gRPC and back as a thumbnail"
+
 curl -fsS -X POST "$core/api/v1/orders/" \
   -H 'Content-Type: application/json' \
   -d "{\"product\": \"$id\", \"quantity\": 3}"
