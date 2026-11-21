@@ -2,14 +2,25 @@
 
 ## Purpose
 
-This repository is a template for backend systems built by AI agents under
-human direction. A new project starts as a copy of it
-(`gh repo create <name> --template grenkoff/polyglot-backend-template`)
+This repository is a template for web projects built by AI agents under
+human direction: a site or a web application with its pages, its HTTP API
+and its admin. A new project starts as a copy of it
+(`gh repo create <name> --template grenkoff/monolith-first`)
 and keeps its stack, structure, rules and checks.
 
 A project starts as a modular monolith: one Django service, `core`, made of
-modules that can each become a separate service later, and only when it has
-to (see "Architecture").
+modules that can each become a separate service later with little effort,
+and only for a concrete reason (see "Architecture"). Its pages are
+rendered on the server and styled by one design system with three themes
+to choose from (see "Frontend").
+
+The project is polyglot: Python and Rust work together inside the monolith
+(a Rust extension module) and across services (a Rust service behind gRPC).
+See "Languages" for what is allowed and what is forbidden.
+
+A new product starts from one sentence of the human ("make me a website
+for a barbershop"): the agent plans, asks the key questions and then builds
+a working version fast (see "A new product").
 
 Roles:
 
@@ -90,6 +101,10 @@ Changing anything in this table needs the human's approval.
 |------|--------|
 | Monolith | Python 3.14, Django 6.1 from [wemake-django-template](https://github.com/wemake-services/wemake-django-template) |
 | HTTP API | [django-modern-rest](https://github.com/wemake-services/django-modern-rest) (`dmr`) with `msgspec`; not DRF, not Django Ninja |
+| Pages | Django templates rendered on the server |
+| CSS | [Tailwind CSS](https://tailwindcss.com) v4 through its standalone CLI (no Node.js), themed by the tokens of the design system |
+| Browser code | web components as plain JavaScript ES modules and browser Web APIs; no framework, no npm, no bundler |
+| Rust in the monolith | an extension module built with [PyO3](https://pyo3.rs) and [maturin](https://www.maturin.rs), for heavy computation only |
 | Python dependencies | Poetry (as wemake-django-template does) |
 | Python checks | ruff, [wemake-python-styleguide](https://github.com/wemake-services/wemake-python-styleguide), mypy strict, ty (second, non-blocking), import-linter |
 | Python tests | pytest, hypothesis, schemathesis + tracecov, mutmut |
@@ -169,8 +184,10 @@ Modules of the monolith:
 10. **One PostgreSQL by default.** Another store (a search engine, a cache,
     ClickHouse) comes only when a module really needs it, and only that
     module uses it.
-11. **One language in the monolith: Python.** Rust or another language
-    appears only in an extracted service.
+11. **Python in the monolith, Rust only where Python is too slow.** A
+    module may call a Rust extension module (PyO3) for heavy computation,
+    through a protocol in its `logic/` and an adapter in its `infra/`,
+    like any other collaborator; no other language enters the monolith.
 
 When to extract a module, only when at least one holds:
 
@@ -278,6 +295,77 @@ Generated code:
   `contracts/build.rs`; it is never committed and is the only place where
   generated Rust code lives, so lints of the workspace do not apply to it.
 - Generated code is never edited by hand.
+
+## Languages
+
+| Language | Where |
+|----------|-------|
+| Python | the monolith `core`, scripts, checks and agent hooks |
+| Rust | extension modules of the monolith, extracted services, our own tools (`eo-lint`) |
+| JavaScript | only plain ES modules in the browser that define web components; never on the server, never in tooling |
+| HTML, CSS | Django templates; CSS through Tailwind and the design system |
+| SQL, protobuf | migrations and queries; contracts in `proto/` |
+
+Forbidden, in the code and in the tooling alike:
+
+- Go, Node.js, npm, Deno, Bun, TypeScript and anything that compiles to
+  JavaScript;
+- FastAPI, Flask and any web framework but Django;
+- JavaScript frameworks and libraries: React, Angular, Vue, Svelte, Solid,
+  Lit, Alpine, htmx, jQuery and the like;
+- CSS frameworks but Tailwind, CSS preprocessors.
+
+A tool that is needed and exists only for Node.js is replaced by a
+standalone binary or by a script of our own in Python or Rust.
+
+## Frontend
+
+Pages are rendered by `core` with Django templates and work without
+JavaScript; JavaScript only improves them (progressive enhancement).
+
+1. **Browser Web APIs before code**: HTML elements and attributes first
+   (`<dialog>`, `popover`, `<details>`, form validation, `loading="lazy"`),
+   then CSS (View Transitions, `:has()`, container queries), then
+   JavaScript with Web APIs (`fetch`, `IntersectionObserver`,
+   `localStorage`). A library is never the answer.
+2. **Web components** for any behaviour in the browser: one custom element
+   per file in `static/components/`, a plain ES module with no imports
+   from outside the project, named `<project>-<thing>`. A component reads
+   its data from its attributes and its children, so the page works
+   before it loads.
+3. **One design system.** Every page is built from its components and
+   styled only by its tokens (colours, fonts, spacing, radii, shadows) as
+   Tailwind classes; no colour, size or font written by hand in a
+   template. A new page therefore matches the rest of the site.
+4. **Three themes.** The design system ships three themes on the same
+   components; a project picks one in "A new product" and may let its
+   visitors switch.
+5. **Accessible by default**: semantic HTML, labels on every control,
+   keyboard focus visible, contrast of the tokens checked.
+
+Elegant Objects apply to JavaScript where the platform allows: a custom
+element extends `HTMLElement`, as the platform dictates; everything else
+follows the rules, comments and directives are forbidden as everywhere.
+
+## A new product
+
+When the human starts a product with one sentence ("make me a website for
+a barbershop"), the agent:
+
+1. **Plans first**: switches to plan mode with its strongest model (or
+   asks the human to switch, when it cannot do it itself) and plans the
+   product deeply before any code: modules, pages, data, events.
+2. **Asks the key questions** in one questionnaire (`docs/intake.md`):
+   what the product is for, its pages and entities, users and roles,
+   languages of the site, which of the three themes, the brand (name,
+   logo, colours) and contacts. Nothing else is asked later that the
+   questionnaire could have asked.
+3. **Builds a working version fast**: modules, pages and the theme from
+   the generators and the cookbook, then removes the example; `make up`
+   shows the site.
+
+The usual rules apply from the first line of code: Issues, TDD, checks and
+pull requests.
 
 ## Design principles
 
@@ -815,6 +903,12 @@ Machine-enforced: `django-migration-linter` (`lintmigrations`) and
 
 ## Dependencies
 
+**As few dependencies as possible.** Each one is code we do not control,
+a supply-chain risk and work on every update. Use the standard library,
+the platform (Django, the browser Web APIs) and what the project already
+has first; write a small piece ourselves rather than pull a package for
+it; remove a dependency as soon as nothing needs it.
+
 Adding a dependency:
 
 - **Every new dependency needs the human's approval.** The agent proposes
@@ -1148,10 +1242,12 @@ same pull request.
 Stack and architecture:
 
 - Do not add another web framework, ORM, broker, database, package
-  manager or language. Root `package.json` holds developer tooling only.
+  manager or language; nothing from the forbidden list of "Languages".
+- Do not write JavaScript outside web components, and do not style a page
+  past the design system (see "Frontend").
 - Do not extract a module into a service without a split criterion from
   "Architecture" and the human's approval; do not add a language to the
-  monolith.
+  monolith beyond a Rust extension module.
 - Do not reach into another module: import only its `public/` package;
   no foreign keys, joins or transactions across modules.
 - Do not share a database between services; a service owns its schema.
