@@ -2,6 +2,27 @@
 # This Dockerfile uses multi-stage build to customize DEV and PROD images:
 # https://docs.docker.com/develop/develop-images/multistage-build/
 
+FROM python:3.14.10-slim-bookworm AS native_build
+
+ENV RUSTUP_HOME=/usr/local/rustup \
+  CARGO_HOME=/usr/local/cargo \
+  PATH=/usr/local/cargo/bin:$PATH \
+  MATURIN_VERSION=1.16.0
+
+SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
+
+RUN apt-get update \
+  && apt-get install --no-install-recommends -y build-essential curl \
+  && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+    | sh -s -- -y --profile minimal --default-toolchain stable \
+  && pip install --no-cache-dir "maturin==${MATURIN_VERSION}" \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY ./native /native
+
+RUN maturin build --release --locked \
+  --manifest-path /native/Cargo.toml --out /wheels
+
 FROM python:3.14.10-slim-bookworm AS development_build
 
 LABEL maintainer="example.com"
@@ -96,6 +117,10 @@ RUN --mount=type=cache,target="$POETRY_CACHE_DIR" \
   && poetry sync \
     $(if [ "$DJANGO_ENV" = 'production' ]; then echo '--only main'; fi) \
     --no-interaction --no-ansi
+
+COPY --from=native_build /wheels /wheels
+
+RUN pip install --no-cache-dir /wheels/*.whl && rm -rf /wheels
 
 # This is a special case. We need to run this script as an entry point:
 COPY ./docker/django/entrypoint.sh /docker-entrypoint.sh

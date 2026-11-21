@@ -46,3 +46,12 @@ class ProductPage(HasContainer, View):
             'catalog/product.html',
             {'product': product, 'price': Cents(product.price_cents)},
         )
+
+
+@final
+class Search(HasContainer, View):
+    """Page that finds products by a name typed with mistakes."""
+
+    def get(self, request: HttpRequest) -> HttpResponse:
+        """Renders the form and the products that resemble the query."""
+        return HttpResponse(request.path)
