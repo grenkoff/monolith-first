@@ -1,5 +1,6 @@
 """Common Django settings of core."""
 
+from decouple import Choices
 from django.utils.translation import gettext_lazy as _
 
 from server.settings.components import BASE_DIR, config
@@ -125,6 +126,14 @@ STATICFILES_FINDERS = (
 STATICFILES_DIRS = (BASE_DIR.joinpath('server', 'common', 'django', 'static'),)
 
 SITE_NAME = config('DJANGO_SITE_NAME', default='Example shop')
+
+SITE_THEMES = ('classic', 'warm', 'bold')
+
+SITE_THEME = config(
+    'DJANGO_THEME',
+    default=SITE_THEMES[0],
+    cast=Choices(SITE_THEMES),
+)
 
 
 # Templates

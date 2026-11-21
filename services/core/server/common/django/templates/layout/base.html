@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="{{ LANGUAGE_CODE }}">
+<html lang="{{ LANGUAGE_CODE }}" data-theme="{{ theme }}">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,19 +14,20 @@
     >
     <link rel="stylesheet" href="{% static 'site/site.css' %}">
   </head>
-  <body class="flex min-h-screen flex-col bg-white text-gray-900">
-    <header class="border-b border-gray-200">
-      <nav class="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-        <a href="/" class="text-xl font-semibold">{{ site_name }}</a>
+  <body class="flex min-h-screen flex-col">
+    <header class="ds-header">
+      <nav class="ds-container flex items-center justify-between py-4">
+        <a
+          href="/"
+          class="font-heading text-xl font-semibold"
+        >{{ site_name }}</a>
       </nav>
     </header>
-    <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
+    <main class="ds-container flex-1 py-8">
       {% block content %}{% endblock content %}
     </main>
-    <footer class="border-t border-gray-200">
-      <p class="mx-auto max-w-5xl px-4 py-6 text-sm text-gray-500">
-        {{ site_name }}
-      </p>
+    <footer class="ds-footer">
+      <p class="ds-container py-6">{{ site_name }}</p>
     </footer>
   </body>
 </html>

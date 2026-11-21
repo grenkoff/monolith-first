@@ -48,6 +48,7 @@ run_ci () {
   ruff format --check --diff
   python -m scripts.docstrings
   python -m scripts.transactions
+  python -m scripts.design
   flake8 .
 
   # Lint imports:
