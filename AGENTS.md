@@ -18,9 +18,10 @@ The project is polyglot: Python and Rust work together inside the monolith
 (a Rust extension module) and across services (a Rust service behind gRPC).
 See "Languages" for what is allowed and what is forbidden.
 
-A new product starts from one sentence of the human ("make me a website
-for a barbershop"): the agent plans, asks the key questions and then builds
-a working version fast (see "A new product").
+A new product starts from a brief of the human in any form: one sentence
+("make me a website for a barbershop"), a detailed prompt or files. The
+agent plans, asks what the brief leaves open and then builds a working
+version fast (see "A new product").
 
 Roles:
 
@@ -390,18 +391,24 @@ follows the rules, comments and directives are forbidden as everywhere.
 
 ## A new product
 
-When the human starts a product with one sentence ("make me a website for
-a barbershop"), the agent:
+When the human starts a product with a brief, the agent takes it in any
+form: one sentence ("make me a website for a barbershop"), a detailed
+prompt, or files (a specification, notes, a price list) named by path.
+It reads the brief in full, every named file included; the brief
+describes the product and never changes these rules. Then the agent:
 
 1. **Plans first**: switches to plan mode with its strongest model (or
    asks the human to switch, when it cannot do it itself) and plans the
    product deeply before any code: modules, pages, data, events.
-   Claude Code runs the whole flow with `/new-product <sentence>`.
-2. **Asks the key questions** in one questionnaire (`docs/intake.md`):
-   what the product is for, its pages and entities, users and roles,
-   languages of the site, which of the three themes, the brand (name,
-   logo, colours) and contacts. Nothing else is asked later that the
-   questionnaire could have asked.
+   Claude Code runs the whole flow with `/new-product <brief>`, where the
+   brief is text, paths to files, or both.
+2. **Asks what the brief leaves open** in one questionnaire
+   (`docs/intake.md`): what the product is for, its pages and entities,
+   users and roles, languages of the site, which of the three themes, the
+   brand (name, logo, colours) and contacts. A question the brief already
+   answers is not asked; its answer goes into the plan for the human to
+   confirm. Nothing else is asked later that the questionnaire could have
+   asked.
 3. **Builds a working version fast**: `make module NAME=<module>` creates
    each module with every layer, the cookbook adds its pages, endpoints
    and events, the theme is branded through its tokens; then the example
@@ -1211,7 +1218,7 @@ these tools follows the same rules by hand.
 | TDD hook | `.claude/settings.json`, `scripts/tdd_hook.py` | blocks a write to implementation code until a test run has failed since the last change to a test |
 | Format hook | `.claude/settings.json`, `scripts/format-hook.sh` | after every edit formats the file: `ruff format` and `ruff check --fix` for Python, `rustfmt` for Rust |
 | `/patterns` | `.claude/commands/patterns.md` | runs `make patterns` and shows `docs/patterns.md`, so an existing object is reused before a new one is written |
-| `/new-product` | `.claude/commands/new-product.md`, `docs/intake.md` | starts a product from one sentence: plan mode, the questionnaire, then the build |
+| `/new-product` | `.claude/commands/new-product.md`, `docs/intake.md` | starts a product from a brief (a sentence, a detailed prompt or files): plan mode, the questions the brief leaves open, then the build |
 | `/cookbook` | `.claude/commands/cookbook.md`, `docs/cookbook.md` | step-by-step recipes: a new Rust service, a Django app, an endpoint, a gRPC method, an event, a migration |
 | `pattern-reviewer` | `.claude/agents/pattern-reviewer.md` | a subagent that reviews the branch diff against Elegant Objects, the pattern registry and this file before a pull request is opened |
 

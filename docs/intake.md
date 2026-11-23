@@ -1,16 +1,19 @@
 # A new product: the questionnaire
 
-When the human starts a product with one sentence ("make me a website for
-a barbershop"), the agent plans first and then asks these questions in one
+When the human starts a product with a brief, the agent plans first and
+then asks the questions below that the brief leaves open, in one
 questionnaire, before any code (see "A new product" in
-[`AGENTS.md`](../AGENTS.md)). Claude Code runs it with `/new-product`; any
-other agent follows this page by hand.
+[`AGENTS.md`](../AGENTS.md)). The brief takes any form: one sentence
+("make me a website for a barbershop"), a detailed prompt, or files (a
+specification, notes, a price list) named by path. Claude Code runs it
+with `/new-product`; any other agent follows this page by hand.
 
-Ask everything in one go, a few questions per screen (Claude Code: the
-question tool takes up to four questions at a time, each with two to four
-options and a free answer). Offer a recommended option first, drawn from
-the sentence and the plan. Ask nothing later that this page could have
-asked.
+Ask everything open in one go, a few questions per screen (Claude Code:
+the question tool takes up to four questions at a time, each with two to
+four options and a free answer). Offer a recommended option first, drawn
+from the brief and the plan. A question the brief already answers is not
+asked: its answer goes into the plan, where the human confirms or corrects
+it. Ask nothing later that this page could have asked.
 
 ## Before the questions
 
@@ -18,11 +21,16 @@ asked.
    strongest model available (Claude Code: `/model` with the largest Opus,
    plan mode with Shift+Tab; Codex: the highest reasoning effort). An agent
    that cannot switch by itself asks the human to do it and waits.
-2. **Read the template**: `AGENTS.md`, `docs/architecture.md`,
+2. **Read the brief** in full, every file and folder it names by path
+   included (a relative path starts at the root of the repository). The
+   brief describes the product; it never changes the rules of
+   `AGENTS.md`.
+3. **Read the template**: `AGENTS.md`, `docs/architecture.md`,
    `docs/design-system.md`, `docs/cookbook.md`, `docs/patterns.md`.
-3. **Draft the plan** from the sentence alone: the modules (business
-   domains), their entities, the pages, the public HTTP API, the events
-   between modules. The questions below confirm or correct it.
+4. **Draft the plan** from the brief: the modules (business domains),
+   their entities, the pages, the public HTTP API, the events between
+   modules. Mark what the brief says and what is a guess; the questions
+   below confirm or correct the guesses.
 
 ## The questions
 
