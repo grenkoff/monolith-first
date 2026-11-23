@@ -55,15 +55,23 @@ First steps in a new project created from the template (the agent performs
 all of them, including the GitHub settings):
 
 1. Install the tools (see "Developer environment") and run `make setup`.
-2. Create the branches: `develop` from `main`, then rename `main` to
-   `production`; make `production` the default branch.
+2. Create `develop` from `production` and push it: a repository created
+   from the template starts with one branch, `production`, the default
+   one.
 3. Configure the repository: rebase merge only, delete branches after
    merge, protect `develop` and `production` (pull requests only, every
-   required CI job green).
-4. `make env`, then `make check`: everything must be green before the first
-   task.
-5. Replace the project name and description in `README.md`; keep the
-   example (`catalog` and `orders`) until the first real module exists.
+   required CI job green, the branch up to date before merging). GitHub
+   protects the branches of a private repository only on a paid plan; on
+   the free one, ask the human whether to make the repository public or
+   to go on without protection.
+4. Replace the project name and description in `README.md` on a branch
+   `docs/readme` from `develop` and commit it; keep the example
+   (`catalog` and `orders`) until the first real module exists. GitHub
+   writes the first commit of the repository as `Initial commit`, which
+   is not a Conventional Commit, so `make check` passes only once the
+   project has a commit of its own.
+5. `make env`, then `make check` on that branch: everything must be green
+   before the first task; then the pull request to `develop`.
 
 ## Repository map
 

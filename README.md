@@ -22,7 +22,7 @@ asks the key questions and builds a working version.
 ## Start a new project
 
 ```bash
-gh repo create my-site --template grenkoff/monolith-first --private --clone
+gh repo create my-site --template grenkoff/monolith-first --public --clone
 cd my-site
 make doctor   # lists the tools that are missing
 make setup    # installs the Rust toolchain and the core venv
@@ -30,6 +30,11 @@ make env      # creates services/core/config/.env
 make up       # starts the site on http://localhost:8000
 make e2e      # checks that an order reaches the catalog through the outbox
 ```
+
+A private repository works too, but GitHub protects its branches only on
+a paid plan. The agent does the rest of the first steps of
+[`AGENTS.md`](AGENTS.md) ("Getting started") by itself: the `develop`
+branch, the settings of the repository and the first commit.
 
 Then tell your AI agent what to build, in any form: one sentence, a
 detailed prompt or a file with the brief. In Claude Code:
