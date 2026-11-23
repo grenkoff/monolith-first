@@ -2,6 +2,16 @@
 
 Every release of this project, built by `make changelog` from Conventional Commits.
 
+## v2026.11.23
+
+### Dependencies
+
+- **deps**: Bump the python group across 1 directory with 23 updates (#80)
+
+### Documentation
+
+- **agents**: Start a new product from a brief in any form
+
 ## v2026.11.21
 
 ### Features
