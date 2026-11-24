@@ -314,7 +314,14 @@ do_not_mutate = [
   "server/asgi.py",
   "server/wsgi.py",
 ]
-also_copy = ["tests/", "config/", "manage.py", "setup.cfg", "pyproject.toml"]
+also_copy = [
+  "tests/",
+  "config/",
+  "locale/",
+  "manage.py",
+  "setup.cfg",
+  "pyproject.toml",
+]
 mutate_only_covered_lines = true
 pytest_add_cli_args = [
   "-o", "addopts=",
