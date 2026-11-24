@@ -3,6 +3,7 @@ SHELL := /bin/bash
 CORE := services/core
 NATIVE := $(CORE)/native
 COMPOSE := env UID=$(shell id -u) GID=$(shell id -g) docker compose
+CORE_COMPOSE := $(COMPOSE) --project-name $(notdir $(CURDIR))-core
 PYTHON_VERSION := $(shell cat $(CORE)/.python-version)
 POETRY_VERSION := $(shell sed -n "s/.*POETRY_VERSION=\([0-9.]*\).*/\1/p" $(CORE)/docker/django/Dockerfile)
 RUST_COVERAGE_IGNORE := '(^|/)(main|build)\.rs$$'
@@ -88,9 +89,9 @@ endif
 
 .PHONY: architecture
 architecture: env
-	cd $(CORE) && $(COMPOSE) build web
+	cd $(CORE) && $(CORE_COMPOSE) build web
 	$(COMPOSE) config --format json | \
-	  (cd $(CORE) && $(COMPOSE) run --rm --no-deps -T web ./docker/django/architecture.sh)
+	  (cd $(CORE) && $(CORE_COMPOSE) run --rm --no-deps -T web ./docker/django/architecture.sh)
 
 .PHONY: patterns
 patterns:
@@ -115,8 +116,8 @@ rust:
 security: env
 	gitleaks git --no-banner --redact .
 	cargo deny --locked check advisories
-	cd $(CORE) && $(COMPOSE) build web && \
-	  $(COMPOSE) run --rm --no-deps web pip-audit --desc
+	cd $(CORE) && $(CORE_COMPOSE) build web && \
+	  $(CORE_COMPOSE) run --rm --no-deps web pip-audit --desc
 
 .PHONY: duplicates
 duplicates:
@@ -155,18 +156,18 @@ mutants-rust:
 
 .PHONY: mutants-core
 mutants-core: env
-	cd $(CORE) && $(COMPOSE) build web && \
-	  $(COMPOSE) run --rm web ./docker/django/mutants.sh
+	cd $(CORE) && $(CORE_COMPOSE) build web && \
+	  $(CORE_COMPOSE) run --rm web ./docker/django/mutants.sh
 
 .PHONY: core
 core: env
-	cd $(CORE) && $(COMPOSE) build web && \
-	  $(COMPOSE) run --rm web ./docker/django/ci.sh
+	cd $(CORE) && $(CORE_COMPOSE) build web && \
+	  $(CORE_COMPOSE) run --rm web ./docker/django/ci.sh
 
 .PHONY: ty
 ty: env
-	cd $(CORE) && $(COMPOSE) build web && \
-	  $(COMPOSE) run --rm --no-deps web ty check
+	cd $(CORE) && $(CORE_COMPOSE) build web && \
+	  $(CORE_COMPOSE) run --rm --no-deps web ty check
 
 .PHONY: up
 up: env
