@@ -13,7 +13,7 @@ def _templates(text: str) -> list[str]:
 def test_module_script_of_a_component_passes() -> None:
     tag = (
         '<script type="module" '
-        'src="{% static \'components/site-theme.js\' %}"></script>'
+        'src="{% static \'components/site-sample.js\' %}"></script>'
     )
     assert not _templates(tag)
 
@@ -23,7 +23,7 @@ def test_module_script_of_a_component_passes() -> None:
     [
         '<script>alert(1)</script>',
         '<script src="https://cdn.example/htmx.js"></script>',
-        '<script src="{% static \'components/site-theme.js\' %}"></script>',
+        '<script src="{% static \'components/site-sample.js\' %}"></script>',
         '<button onclick="go()">Go</button>',
     ],
 )
