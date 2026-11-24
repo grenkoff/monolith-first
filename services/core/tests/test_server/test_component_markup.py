@@ -51,7 +51,14 @@ def _tags(client: Client, url: str) -> list[_Tag]:
         ),
     ],
 )
-def test_header_offers_the_themes(client: Client, tag: _Tag) -> None:
+def test_header_offers_the_themes(
+    client: Client,
+    settings: LazySettings,
+    tag: _Tag,
+) -> None:
+    settings.SITE_THEME = 'classic'
+    settings.SITE_THEME_SWITCHER = True
+
     assert tag in _tags(client, reverse('catalog:home'))
 
 
