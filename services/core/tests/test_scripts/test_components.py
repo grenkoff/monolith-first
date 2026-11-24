@@ -4,8 +4,8 @@ import pytest
 
 from scripts.components import ComponentReport
 
-_THEME = 'server/common/django/static/components/site-theme.js'
-_DEFINED = "customElements.define('site-theme', SiteTheme);\n"
+_SAMPLE = 'server/common/django/static/components/site-sample.js'
+_DEFINED = "customElements.define('site-sample', SiteSample);\n"
 
 
 def _scripts(path: str, text: str) -> list[str]:
@@ -15,7 +15,7 @@ def _scripts(path: str, text: str) -> list[str]:
 
 def test_component_defining_its_element_passes() -> None:
     text = f"import {{ Price }} from './price.js';\n{_DEFINED}"
-    assert not _scripts(_THEME, text)
+    assert not _scripts(_SAMPLE, text)
 
 
 def test_script_outside_components_is_reported() -> None:
@@ -26,8 +26,8 @@ def test_script_outside_components_is_reported() -> None:
 
 
 def test_missing_element_is_reported() -> None:
-    assert _scripts(_THEME, "customElements.define('site-other', Other);\n") == [
-        f'{_THEME}: defines no custom element named site-theme',
+    assert _scripts(_SAMPLE, "customElements.define('site-other', Other);\n") == [
+        f'{_SAMPLE}: defines no custom element named site-sample',
     ]
 
 
@@ -41,6 +41,6 @@ def test_missing_element_is_reported() -> None:
     ],
 )
 def test_foreign_import_is_reported(statement: str) -> None:
-    assert _scripts(_THEME, f'{statement}{_DEFINED}') == [
-        f'{_THEME}:1: imports from outside the project',
+    assert _scripts(_SAMPLE, f'{statement}{_DEFINED}') == [
+        f'{_SAMPLE}:1: imports from outside the project',
     ]
