@@ -2,7 +2,8 @@ SHELL := /bin/bash
 .DEFAULT_GOAL := help
 CORE := services/core
 NATIVE := $(CORE)/native
-COMPOSE := env UID=$(shell id -u) GID=$(shell id -g) docker compose
+COMPOSE := env UID=$(shell id -u) GID=$(shell id -g) CORE_IMAGE=core:$(notdir $(CURDIR)) \
+  IMAGES_IMAGE=images:$(notdir $(CURDIR)) docker compose
 CORE_COMPOSE := $(COMPOSE) --project-name $(notdir $(CURDIR))-core
 PYTHON_VERSION := $(shell cat $(CORE)/.python-version)
 POETRY_VERSION := $(shell sed -n "s/.*POETRY_VERSION=\([0-9.]*\).*/\1/p" $(CORE)/docker/django/Dockerfile)
