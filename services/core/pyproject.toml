@@ -178,6 +178,12 @@ flake8-self.extend-ignore-names = ["_meta"]
 mccabe.max-complexity = 6
 pydocstyle.convention = "google"
 
+allowed-confusables = [
+  "\u0410", "\u0412", "\u0415", "\u041A", "\u041C", "\u041D",
+  "\u041E", "\u0420", "\u0421", "\u0422", "\u0425", "\u0430",
+  "\u0435", "\u043E", "\u0440", "\u0441", "\u0443", "\u0445",
+]
+
 [tool.ruff.lint.per-file-ignores]
 "server/**/migrations/*.py" = ["D100", "D101", "E501", "RUF012"]
 "server/common/typing/*.py" = ["F401"]
