@@ -340,6 +340,11 @@ Forbidden, in the code and in the tooling alike:
 A tool that is needed and exists only for Node.js is replaced by a
 standalone binary or by a script of our own in Python or Rust.
 
+The list covers the code we write and the tools we run. A ready image of
+a third-party service that the system runs (NATS, Caddy, a media server)
+may be written in any language; adding one is a change of the stack that
+the human approves.
+
 ## Frontend
 
 Pages are rendered by `core` with Django templates and work without
