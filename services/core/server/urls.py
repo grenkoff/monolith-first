@@ -23,10 +23,12 @@ from server.apps.catalog.api import urls as catalog_api_urls
 from server.apps.catalog.views import urls as catalog_page_urls
 from server.apps.orders.api import urls as orders_api_urls
 from server.apps.orders.views import urls as orders_page_urls
+from server.common import health
 
 admin.autodiscover()
 
 router_v1 = Router('v1/')
+router_v1.include(health.router, namespace='health')
 router_v1.include(catalog_api_urls.router, namespace='catalog')
 router_v1.include(orders_api_urls.router, namespace='orders')
 
