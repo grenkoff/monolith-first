@@ -58,12 +58,14 @@ all of them, including the GitHub settings):
 2. Create `develop` from `production` and push it: a repository created
    from the template starts with one branch, `production`, the default
    one.
-3. Configure the repository: rebase merge only, delete branches after
-   merge, protect `develop` and `production` (pull requests only, every
-   required CI job green, the branch up to date before merging). GitHub
-   protects the branches of a private repository only on a paid plan; on
-   the free one, ask the human whether to make the repository public or
-   to go on without protection.
+3. Configure the repository: rebase merge only, auto-merge allowed,
+   delete branches after merge, protect `develop` and `production` (pull
+   requests only, every required CI job green, the branch up to date
+   before merging). GitHub protects the branches of a private repository
+   only on a paid plan; on the free one, ask the human whether to make
+   the repository public or to go on without protection. The agent turns
+   auto-merge on for a pull request only when the human said that the
+   agent merges that one.
 4. Replace the project name and description in `README.md` on a branch
    `docs/readme` from `develop` and commit it; keep the example
    (`catalog` and `orders`) until the first real module exists. GitHub
