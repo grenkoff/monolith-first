@@ -647,10 +647,13 @@ Machine-enforced (`make check` and CI):
 | unused dependencies | deptry | cargo-machete |
 | duplicated code | `clones` (both languages, from 8 lines) | `clones` |
 
-vulture skips `server/settings/`, which Django reads by name. Other
-framework entrypoints that look unused to vulture (view methods, admin
-classes, management commands, model fields) go to `ignore_names` under
-`[tool.vulture]` in `services/core/pyproject.toml`. cargo-machete ignores
+vulture skips `server/settings/`, which Django reads by name.
+`ignore_names` under `[tool.vulture]` in `services/core/pyproject.toml`
+already lists the standard names of the Django admin, model `Meta` and
+generic views (`list_display`, `ordering`, `verbose_name`,
+`template_name`, …). Other framework entrypoints that look unused to
+vulture (view methods, admin classes, management commands, model fields)
+go to the same list. cargo-machete ignores
 only dependencies that generated code or a crate feature needs, listed
 under `[package.metadata.cargo-machete]` of the crate. The agent asks the
 human before adding a name to either list; never keep real dead code
