@@ -75,6 +75,18 @@ jobs:
       BIOME_SHA256: 0653fd798e50565efac8b1958c9a2786fada55cc6c362b7da4f16efff8dd30d8
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Shell scripts are executable
+        run: make modes
+      - name: Added lines have no comments or directives
+        if: github.event_name != 'workflow_dispatch'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            make comments BASE="$BASE"
+          fi
       - uses: astral-sh/setup-uv@v7
       - name: Install toolchain from rust-toolchain.toml
         run: rustup show active-toolchain || rustup toolchain install
