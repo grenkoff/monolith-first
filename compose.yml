@@ -6,7 +6,7 @@ x-logging: &logging
     max-file: "5"
 
 x-core: &core
-  image: "core:dev"
+  image: "${CORE_IMAGE:-core:dev}"
   build:
     context: ./services/core
     dockerfile: ./docker/django/Dockerfile
@@ -83,7 +83,7 @@ services:
     build:
       context: .
       dockerfile: ./services/images/Dockerfile
-    image: "images:dev"
+    image: "${IMAGES_IMAGE:-images:dev}"
     restart: unless-stopped
     logging: *logging
 

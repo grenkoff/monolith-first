@@ -40,7 +40,7 @@ services:
       # CI builds the development image under a local tag first, then retags
       # it to the registry tag after tests pass. Production overrides this
       # with a full registry image in docker/docker-compose.prod.yml.
-      image: "core:dev"
+      image: "${CORE_IMAGE:-core:dev}"
       logging: *logging-default
       build:
         target: development_build
@@ -49,7 +49,7 @@ services:
         args:
           DJANGO_ENV: development
         cache_from:
-          - "core:dev"
+          - "${CORE_IMAGE:-core:dev}"
           - "core:latest"
 
       volumes:
