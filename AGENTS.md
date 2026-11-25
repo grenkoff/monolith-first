@@ -1265,6 +1265,15 @@ Supported systems: Linux, macOS, Windows 11 with WSL2. On Windows the
 repository lives inside the WSL file system (`~/projects/...`), never
 under `/mnt/c`: file watching, permissions and speed break there.
 
+An agent that runs on Windows reads and edits the files over
+`\\wsl.localhost\...`, but runs every command inside WSL, never `git` or
+`make` over that path: git refuses the path as of dubious ownership, and
+an edit made from Windows drops the executable bit of a script
+(`make modes` catches it; restore it with `chmod +x`). Run a command as
+`wsl.exe -d <distribution> --cd <path> -- <command>`, and anything longer
+than one line as a script file passed to `bash`: PowerShell adds a BOM and
+CRLF to text piped into `wsl.exe` and breaks the quoting of `bash -c`.
+
 Required tools (`make doctor` checks them and prints what is missing):
 
 | Tool | Used for |
