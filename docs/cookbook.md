@@ -675,4 +675,10 @@ Once the first real module exists, in its own pull request:
    registries from the real `server.apps.catalog` and `orders`
    (`tests/test_scripts/test_keys.py`, `test_relations.py`,
    `test_facade_transactions.py`).
-5. `make patterns`, `make check`.
+5. The shared code that only the example uses, unless the new module
+   uses it too: `server/common/money.py` with `tests/test_server/test_money.py`
+   and `server/common/text.py`; vulture reports what is left. The health
+   endpoint `GET /api/v1/health/` (`server/common/health.py`) stays, so
+   the HTTP API and its schema are never empty, and so do the outbox,
+   `di.py` and `serializers.py`.
+6. `make patterns`, `make check`.
