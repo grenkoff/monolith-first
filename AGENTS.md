@@ -723,8 +723,10 @@ are. When you change a line that carries one, delete it together with the
 change; do not rewrite or shorten it.
 
 Machine-enforced: ruff `D` rules and a one-line check for Python docstrings,
-`missing_docs` (denied) and `eo-lint` for Rust doc lines, a comment and
-directive scan over the diff in CI.
+`missing_docs` (denied) and `eo-lint` for Rust doc lines, and
+`make comments` over the lines a branch adds (Python, Rust, JavaScript,
+protobuf, shell, YAML, TOML, Dockerfiles, Makefiles and templates;
+generated code and migrations are skipped).
 
 ## Test-driven development
 
@@ -1201,7 +1203,7 @@ a pull request merges only with every required job green.
 | rust-mutants | cargo-mutants: zero survivors |
 | core | the wemake-django-template pipeline (ruff, wemake-python-styleguide, mypy, import-linter, pytest, schemathesis, Django checks, migration linters, deptry), pip-audit, vulture, transaction check, coverage (80% overall, 100% in `logic/`), mutmut |
 | core-ty | ty (non-blocking: reported, never fails the pull request) |
-| tooling | `make hooks` (ruff, mypy and pytest for `scripts/` and `tests/browser/`), `make js` (Biome), `make duplicates` (`clones`) |
+| tooling | `make modes` (shell scripts executable in git), `make comments` (no comments or directives on added lines), `make hooks` (ruff, mypy and pytest for `scripts/` and `tests/browser/`), `make js` (Biome), `make duplicates` (`clones`) |
 | e2e | `make up`, a request through every service and the browser tests (`make browser`) |
 
 When CI is red:
@@ -1314,6 +1316,8 @@ so local runs match CI.
 | `make logs` | follows the logs of the running system |
 | `make e2e` | starts the system and sends a request through every service |
 | `make commitlint` | checks the last commit (or `RANGE=<from>..<to>`) against Conventional Commits |
+| `make comments` | rejects comments and tool directives on the lines added since `origin/develop` (or `BASE=<commit>`) |
+| `make modes` | rejects a tracked shell script that is not executable in git |
 | `make changelog VERSION=<version>` | writes `CHANGELOG.md` with git-cliff for the next release |
 | `make release-notes` | prints the notes of the latest release tag for the GitHub Release |
 | `make check` | everything CI runs, in the same order |

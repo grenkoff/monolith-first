@@ -40,6 +40,8 @@ help:
 	  'make down          stop the whole system' \
 	  'make e2e           check a request through every service' \
 	  'make commitlint    check commit messages (Conventional Commits)' \
+	  'make comments      no comments or tool directives on lines added since BASE' \
+	  'make modes         every shell script is executable in git' \
 	  'make changelog     write CHANGELOG.md for VERSION=vYYYY.MM.DD (git-cliff)' \
 	  'make release-notes print the notes of the latest release' \
 	  'make check         everything CI runs'
@@ -187,6 +189,16 @@ e2e: up
 commitlint:
 	git log -z --format=%B $(or $(RANGE),-1) | cargo run -q -p commit-lint --locked
 
+.PHONY: comments
+comments:
+	git diff --unified=0 --no-color --no-ext-diff --src-prefix=a/ --dst-prefix=b/ \
+	  $(or $(BASE),origin/develop)...HEAD | python3 scripts/comments.py
+
+.PHONY: modes
+modes:
+	git ls-files -s -- '*.sh' | \
+	  awk '$$1 != "100755" { print $$4 ": not executable"; bad = 1 } END { exit bad }'
+
 .PHONY: changelog
 changelog:
 	@test -n "$(VERSION)" || { echo 'usage: make changelog VERSION=vYYYY.MM.DD'; exit 1; }
@@ -197,5 +209,5 @@ release-notes:
 	@git-cliff --latest --strip header
 
 .PHONY: check
-check: commitlint security contracts architecture hooks js duplicates rust core mutants e2e
+check: commitlint comments modes security contracts architecture hooks js duplicates rust core mutants e2e
 	$(MAKE) down
