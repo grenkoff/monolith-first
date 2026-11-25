@@ -1224,7 +1224,10 @@ When CI is red:
    blindly.
 3. A test that fails only sometimes is a bug: find the cause (time, order,
    a shared resource) and fix it.
-4. A change to CI itself goes through a pull request like any code; a
+4. When CI fails where a local `make check` passed, run it again in a
+   fresh worktree: files that git ignores (compiled translations, caches)
+   stay from earlier runs and can hide a failure.
+5. A change to CI itself goes through a pull request like any code; a
    change that weakens a check needs the human's approval.
 
 ## Agent tools
