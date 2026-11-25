@@ -71,6 +71,36 @@ Example: the product page `GET /products/<id>/` in `server/apps/catalog/`.
 6. `make up` shows it at once: `core-css` rebuilds the stylesheet when a
    template uses a new class; `make css` builds it once.
 
+## Translate the site
+
+Django i18n is on (`LocaleMiddleware`, `LOCALE_PATHS = ('locale/',)`);
+the template speaks English only.
+
+1. `LANGUAGES` and `LANGUAGE_CODE` in
+   `server/settings/components/common.py` list the languages of the site,
+   the default one in `LANGUAGE_CODE`.
+2. Pages go inside `i18n_patterns(...)` in `server/urls.py`, so every
+   page lives under its language (`/ru/`, `/en/`); the HTTP API, the
+   admin and health checks stay outside it.
+3. The language switcher is a form in `layout/base.html` that posts
+   `language` and `next` to `set_language`
+   (`path('i18n/', include('django.conf.urls.i18n'))`, outside
+   `i18n_patterns`): it works without JavaScript and stays on the same
+   page.
+4. Texts of templates and code go through `{% translate %}` and
+   `gettext_lazy`; `docker compose run --rm web python manage.py
+   makemessages -l <language>` writes `locale/<language>/LC_MESSAGES/django.po`.
+   Commit the `.po` files only: the entrypoint of every `core` container
+   compiles the stale ones into `.mo`, which git ignores.
+5. Content that staff edit in the admin keeps one field per language
+   (`name_ru`, `name_en`), without a new dependency; `infra/` maps them
+   into one value object of `logic/` that returns the text for a
+   language.
+6. Tests: `reverse()` of a page follows the active language of the
+   thread, which a request to another language in an earlier test leaves
+   behind, and pytest-randomly changes the order. Reverse page URLs inside
+   `translation.override('<language>')`, never bare.
+
 ## Add a web component
 
 Example: `site-total`, the live total of the product page.
