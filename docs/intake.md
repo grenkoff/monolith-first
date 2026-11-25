@@ -46,9 +46,13 @@ it. Ask nothing later that this page could have asked.
 | 8 | Name, logo and brand colours? | the header, the favicon, the tokens of the theme | `DJANGO_SITE_NAME`, `static/site/favicon.svg`, `themes.css` |
 | 9 | Contacts: address, phone, e-mail, opening hours, map? | the footer and the contacts page | a template, settings |
 | 10 | Anything that must not happen? (no visitor accounts, no cookies banner, …) | limits of the plan | the plan |
+| 11 | Does the site keep sensitive personal data (health, children, video of people, documents)? Under which law, with what consent, for how long, and who may see it? | consent, retention, an audit of access, two-factor sign-in, a module to isolate | the plan, the privacy page; isolation is a split criterion |
+| 12 | Must the site work with outside hardware or systems (cameras, a till, a booking service, a CRM)? Which ones, and how do they connect? | an adapter, maybe a service of another stack or a third-party image | the plan; a new image or store is a stack change |
 
-Show `/design/` (after `make up`) when asking question 7, so the human
-sees the three themes.
+For question 7, show `/design/` when the system is running, so the human
+sees the three themes. In plan mode, where nothing may be started,
+describe the themes in a sentence each from `docs/design-system.md` and
+show `/design/` after the first build.
 
 ## After the answers
 
