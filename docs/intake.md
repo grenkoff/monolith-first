@@ -67,7 +67,12 @@ show `/design/` after the first build.
    - brand the theme by changing its tokens in `themes.css`, never the
      components; `make core` checks the contrast;
    - set `DJANGO_SITE_NAME`, `DJANGO_THEME` and
-     `DJANGO_THEME_SWITCHER` in `config/.env.template`.
+     `DJANGO_THEME_SWITCHER` in `config/.env.template`; tests set the
+     settings they depend on themselves, so they do not follow the
+     template;
+   - when visitors may not switch themes, remove the `site-theme`
+     component with its setting, its markup in `layout/base.html` and its
+     tests, the browser test included, instead of turning it off.
 4. Remove the example (`catalog`, `orders`, the `images` service) once
    the first real module exists, in its own pull request.
 5. `make up` shows the site; `make check` is green before each pull
