@@ -659,9 +659,12 @@ Machine-enforced (`make check` and CI):
 
 vulture skips `server/settings/`, which Django reads by name.
 `ignore_names` under `[tool.vulture]` in `services/core/pyproject.toml`
-already lists the standard names of the Django admin, model `Meta` and
-generic views (`list_display`, `ordering`, `verbose_name`,
-`template_name`, …). Other framework entrypoints that look unused to
+already lists the standard names of the Django admin, model `Meta`,
+generic views, managers and forms (`list_display`, `ordering`,
+`verbose_name`, `template_name`, `has_change_permission`,
+`get_by_natural_key`, `form_valid`, …), and wemake-python-styleguide
+allows the name `objects` of a custom manager (`allowed-domain-names` in
+`services/core/setup.cfg`). Other framework entrypoints that look unused to
 vulture (view methods, admin classes, management commands, model fields)
 go to the same list. cargo-machete ignores
 only dependencies that generated code or a crate feature needs, listed
