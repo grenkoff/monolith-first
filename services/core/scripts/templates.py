@@ -44,7 +44,7 @@ class ModuleTemplate(Report):
 
     def _problem(self, position: int) -> str:
         """Returns the line that reports the tag at the position."""
-        number = self._text.count('\n', 0, position) + 1
+        number = self._text[:position].count('\n') + 1
         return (
             f'{self._name}:{number}: a module uses only its own '
             'templates and the site layout'
