@@ -61,7 +61,13 @@ Example: the product page `GET /products/<id>/` in `server/apps/catalog/`.
    template; a domain error becomes `Http404` or a page with its status.
    Amounts of money go through `server.common.money.Cents`.
 4. The template in `templates/<app>/<page>.html` extends
-   `layout/base.html` and fills `content` (and `title`). It is styled with
+   `site/layout.html` and fills `content` (and `title`); it extends or
+   includes no template of another module and links its pages with
+   `{% url %}`. A link that every page shows goes into the `navigation` or
+   `footer` block of `server/templates/site/layout.html`; a page of the
+   whole site, not of a module (a privacy policy), lives in
+   `server/templates/site/` and is routed in `server/urls.py` with a
+   `TemplateView`. It is styled with
    the components and tokens of `docs/design-system.md` plus Tailwind
    layout utilities; forms carry `{% csrf_token %}`, labels and HTML
    validation (`required`, `min`), and work without JavaScript.
@@ -654,7 +660,10 @@ Once the first real module exists, in its own pull request:
    `server/urls.py`, `server/composition/catalog.py` and `orders.py`
    with their calls in `server/implemented.py`, the `OrderPlaced`
    subscription in `server/composition/outbox.py`, their tests in
-   `tests/test_apps/test_catalog/` and `tests/test_apps/test_orders/`.
+   `tests/test_apps/test_catalog/` and `tests/test_apps/test_orders/`,
+   and the links of the example in `server/templates/site/layout.html`
+   with `test_example_pages_show_the_site_navigation`, replaced by the
+   pages of the new module.
 2. The `images` service, unless the product keeps photos:
    `services/images/` and its workspace member, `proto/images/` and the
    generated `server/contracts/images/` (`make proto`), the service and
