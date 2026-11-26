@@ -1283,6 +1283,13 @@ Supported systems: Linux, macOS, Windows 11 with WSL2. On Windows the
 repository lives inside the WSL file system (`~/projects/...`), never
 under `/mnt/c`: file watching, permissions and speed break there.
 
+Every target that runs `core` in Docker (`make core`, `make architecture`,
+`make mutants`, `make security`, `make ty`) builds its image first. When
+the build fails, for example because Docker Hub cannot be reached, the
+image already in place runs instead if it was built from the same inputs
+(the Dockerfile, `native/`, `poetry.lock` and `pyproject.toml` of `core`,
+kept as the label `inputs` of the image); otherwise the target fails.
+
 An agent that runs on Windows reads and edits the files over
 `\\wsl.localhost\...`, but runs every command inside WSL, never `git` or
 `make` over that path: git refuses the path as of dubious ownership, and
