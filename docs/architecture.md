@@ -59,6 +59,7 @@ leaves, the same relay publishes its events to NATS.
 server/apps/<module>/
 ├── api/        django-modern-rest controllers
 ├── views/      pages rendered from templates/<module>/
+├── templatetags/  template tags of its pages, when it needs any
 ├── infra/      repositories, adapters to the facades of other modules
 ├── models.py   its own tables, UUIDv7 primary keys
 ├── logic/      value objects, protocols, use cases, the facade implementation

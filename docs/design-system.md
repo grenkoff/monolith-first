@@ -12,7 +12,8 @@ in every theme.
 |------|---------------|
 | `services/core/server/common/django/styles/themes.css` | the themes: one block `[data-theme="<name>"]` per theme that sets every token |
 | `services/core/server/common/django/styles/site.css` | Tailwind with its default palette, fonts, radii and shadows switched off, the tokens as Tailwind values, the components |
-| `services/core/server/common/django/templates/layout/base.html` | the layout every page extends; `data-theme` on `<html>` |
+| `services/core/server/common/django/templates/layout/base.html` | the layout every page extends; `data-theme` on `<html>`; the blocks `home`, `navigation` and `footer` |
+| `services/core/server/templates/site/layout.html` | the layout of the site: its navigation and footer links, extended by every page of a module |
 | `services/core/server/common/django/templates/design/index.html` | the page `/design/` |
 | `services/core/scripts/design.py` | the check run by `make core` |
 

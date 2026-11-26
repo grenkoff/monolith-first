@@ -272,6 +272,8 @@ Machine-enforced by `make architecture`, a CI job of its own:
   (`UUIDField` with `default=uuid.uuid7`);
 - `scripts/transactions.py`: no call to another module inside a
   transaction;
+- `scripts/templates.py`: a module template extends or includes no
+  template of another module;
 - `scripts/compose.py`: only `core` publishes ports; a database serves one
   deployable (services that run the same image count as one).
 
@@ -392,9 +394,17 @@ contrast of 4.5:1.
 
 Where it lives: a module renders its pages in `views/pages.py` (Django
 views, routed in `views/urls.py` and included in `server/urls.py` under
-the namespace of the module) from templates in `templates/<module>/`;
-every page extends `layout/base.html` of
-`server/common/django/templates/`. The stylesheet
+the namespace of the module) from templates in `templates/<module>/`.
+The site has a home of its own outside the modules:
+`server/templates/site/`, where `layout.html` fills the `home`,
+`navigation` and `footer` blocks of `layout/base.html` (in
+`server/common/django/templates/`, which knows no domain) and where pages
+of the whole site live (a privacy policy), routed in `server/urls.py`.
+Every page of a module extends `site/layout.html`. A module template
+extends or includes only its own templates and the two layouts; it links
+pages of other modules with `{% url %}` only, and `scripts/templates.py`
+(in `make architecture`) rejects the rest. Template tags of a module live
+in its `templatetags/`, a layer next to `urls` and `admin`. The stylesheet
 `server/common/django/styles/site.css` is built by the Tailwind
 standalone CLI into `static/site/site.css`, which git ignores: by
 `core-css` while `make up` runs, by `make css` once, and in the
@@ -457,7 +467,7 @@ Layers:
 
 | Service | Layers, outer to inner | Enforced by |
 |---------|------------------------|-------------|
-| `core` (Python), in each module | `api` and `views` (pages) → `infra` → `models` → `logic` → `public`; only `infra` imports the `public` of another module | import-linter (`services/core/.importlinter`) |
+| `core` (Python), in each module | `api`, `views` (pages) and `templatetags` → `infra` → `models` → `logic` → `public`; only `infra` imports the `public` of another module | import-linter (`services/core/.importlinter`) |
 | Extracted Rust services | `api` (tonic, axum) → `infra` (sqlx, async-nats) → `domain`; `main.rs` wires them | `eo-lint` rule EO010 |
 
 `public` is the innermost layer of a module: it imports nothing else of its
@@ -835,7 +845,7 @@ Step-by-step recipes live in `docs/cookbook.md` (`/cookbook`); in short:
 1. Red/green in `tests/test_apps/<app>/test_views/`: status codes and the
    texts a visitor sees.
 2. A view in `views/pages.py` resolves a use case and renders
-   `templates/<app>/<page>.html`, which extends `layout/base.html`.
+   `templates/<app>/<page>.html`, which extends `site/layout.html`.
 3. Route it in `views/urls.py`, include it in `server/urls.py` under the
    namespace of the module.
 
