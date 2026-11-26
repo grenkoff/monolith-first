@@ -7,9 +7,9 @@ from http import HTTPStatus
 import pytest
 from django.urls import reverse
 from dmr.test import DMRClient
-from plugins.images_server import BROKEN
 
 from server.apps.catalog import models
+from tests.plugins.images_server import BROKEN
 
 
 def _upload(image: bytes) -> dict[str, str]:

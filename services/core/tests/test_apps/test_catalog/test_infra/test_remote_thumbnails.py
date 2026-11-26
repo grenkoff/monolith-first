@@ -2,7 +2,6 @@
 
 import pytest
 from django.conf import LazySettings
-from plugins.images_server import BROKEN
 
 from server.apps.catalog.infra.remote import RemoteThumbnails
 from server.apps.catalog.logic.photos import (
@@ -10,6 +9,7 @@ from server.apps.catalog.logic.photos import (
     ThumbnailsUnavailableError,
 )
 from server.apps.catalog.logic.value_objects import Thumbnail
+from tests.plugins.images_server import BROKEN
 
 
 @pytest.mark.usefixtures('images_server')
