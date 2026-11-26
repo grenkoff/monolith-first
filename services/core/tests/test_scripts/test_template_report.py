@@ -32,7 +32,7 @@ def test_own_templates_may_be_included() -> None:
     ],
 )
 def test_template_of_another_module_is_reported(tag: str) -> None:
-    assert _problems(_CATALOG, f'<p>Order</p>\n{tag}') == [
+    assert _problems(_CATALOG, f'\n{tag}\n<p>Order</p>') == [
         f'{_CATALOG}:2: a module uses only its own templates and the site layout',
     ]
 
