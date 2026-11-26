@@ -83,6 +83,32 @@ Example: the product page `GET /products/<id>/` in `server/apps/catalog/`.
 6. `make up` shows it at once: `core-css` rebuilds the stylesheet when a
    template uses a new class; `make css` builds it once.
 
+## Serve a file or a stream
+
+Example: the thumbnail of a product, `GET /products/<id>/thumbnail/`.
+
+1. Bytes are a page, not an endpoint: `dmr` speaks JSON, so a view in
+   `views/pages.py` answers them with `HttpResponse(data,
+   content_type=...)` (`ProductThumbnail`), or `FileResponse` for a file
+   of `MEDIA_ROOT`; a test checks the status, `Content-Type` and the
+   bytes.
+2. Bytes that an internal service makes reach the visitor through `core`,
+   since only `core` is public: the use case asks the service over gRPC
+   with a timeout from settings, through a protocol in `logic/` and an
+   adapter in `infra/`, as for any collaborator. `core` keeps what it
+   shows again (the thumbnail in its own table) instead of asking each
+   time.
+3. A long answer (a live picture of a camera, a large export) comes from
+   a server-streaming gRPC method and goes out as `StreamingHttpResponse`
+   over its messages, each read with a timeout. Every such answer holds a
+   worker of gunicorn for its whole life: size the workers for the
+   viewers expected at once.
+4. When that is not enough (many viewers of live video, files of
+   gigabytes), the human decides on an edge proxy that routes a path to
+   the service: Caddy already serves the static and media files in
+   `services/core/docker/docker-compose.prod.yml`, but a route to another
+   service changes "Only `core` is public" and the stack, so ask first.
+
 ## Translate the site
 
 Django i18n is on (`LocaleMiddleware`, `LOCALE_PATHS = ('locale/',)`);
@@ -220,6 +246,63 @@ relative's account, which lives in another module.
    registered, because the Django check X012 wants every model in the
    admin; `has_add_permission`, `has_change_permission` and
    `has_delete_permission` that return `False` keep it read-only.
+
+## Let visitors sign in
+
+`accounts` holds `User` (`AbstractUser` with a UUIDv7 key) and its admin;
+the pages of signing in go into it. django-axes, already in
+`AUTHENTICATION_BACKENDS`, locks an address after repeated wrong
+passwords.
+
+1. Red: page tests with the Django test client: a right password leads
+   on, a wrong one shows the form again, a page behind sign-in sends a
+   visitor to it; `client.force_login(user)` for every other test.
+2. Sign in by e-mail: the e-mail is the user name, kept in lower case,
+   and a manager finds it regardless of case; the checks allow both names:
+
+   ```python
+   @final
+   class Users(UserManager['User']):
+       @override
+       def get_by_natural_key(self, username: str | None) -> User:
+           return self.get(username__iexact=username)
+
+
+   @final
+   class User(AbstractUser):
+       id = models.UUIDField(primary_key=True, default=uuid.uuid7, editable=False)
+       objects: ClassVar[Users] = Users()
+   ```
+
+3. The pages are the auth views of Django, routed in `views/urls.py`
+   under the namespace `accounts`: `LoginView` with
+   `redirect_authenticated_user=True`, `LogoutView` (a POST form in the
+   site layout), `PasswordChangeView` and `PasswordChangeDoneView`, with
+   templates in `templates/accounts/` that extend `site/layout.html`.
+   Settings: `LOGIN_URL = 'accounts:sign_in'` and `LOGIN_REDIRECT_URL`.
+4. The admin signs in on the same page, so it gets the same rules (and
+   the second factor): `path('admin/login/', RedirectView.as_view(
+   pattern_name='accounts:sign_in', query_string=True))` before
+   `admin.site.urls` in `server/urls.py`.
+5. A page behind sign-in reads `request.user.pk`: without it the view
+   returns `redirect_to_login(request.get_full_path())`, with it it hands
+   the id to its use case, which returns only what that user may see; so
+   the permission of every object lives in the use case and its query,
+   never in a template. Such pages carry `never_cache`. Other modules keep
+   the user by id and ask the facade of `accounts` for anything else.
+6. Accounts that staff create: an invitation is a one-time link. The use
+   case makes a random code (`secrets.token_urlsafe`), the site keeps only
+   its SHA-256 digest and the expiry, the admin (`save_model`) shows the
+   link to staff once, and the page of the link sets the password and
+   spends the invitation in one transaction.
+7. A second factor, when the product needs it: `LoginView.form_valid`
+   does not sign in but keeps the user in a fresh short session
+   (`session.cycle_key()`, `set_expiry`), and the page of the code calls
+   `login()` after a right code. Codes of authenticator apps (RFC 6238)
+   need only `hmac` and `hashlib`; refuse a spent time step, lock the
+   codes for a while after five wrong ones, take time from an injected
+   clock, and let staff reset the factor by deleting it in the admin. A
+   QR code of the key is a new dependency: propose it to the human.
 
 ## Move a computation to Rust inside the monolith
 
