@@ -60,6 +60,12 @@ Example: the product page `GET /products/<id>/` in `server/apps/catalog/`.
    `get` (and `post` for a form) resolves the use case and renders a
    template; a domain error becomes `Http404` or a page with its status.
    Amounts of money go through `server.common.money.Cents`.
+   wemake-python-styleguide allows 12 imports in a module (WPS201), which
+   one page with a form, a few use cases and their errors soon reaches:
+   then `views/` keeps one module per page and one for its forms
+   (`views/family.py`, `views/forms.py`), and a module imports several
+   modules of one package in one statement
+   (`from server.apps.<app>.logic.usecases import find_relative, list_residents`).
 4. The template in `templates/<app>/<page>.html` extends
    `site/layout.html` and fills `content` (and `title`); it extends or
    includes no template of another module and links its pages with
@@ -164,7 +170,56 @@ Example: `orders` prices an order with the `Catalog` facade of `catalog`.
    (the total an order was sold at).
 5. Wire the adapter with the facade in `server/composition/orders.py`;
    `server/implemented.py` hands it the facade that
-   `server/composition/catalog.py` builds.
+   `server/composition/catalog.py` builds. The `inject` of the called
+   module returns its facade, the `inject` of the caller takes it:
+
+   ```python
+   def inject(container: punq.Container) -> Catalog:
+       stored = products.StoredProducts()
+       ...
+       return stored
+
+
+   def inject(container: punq.Container, facade: Catalog) -> None:
+       container.register(
+           place_order.PlaceOrder,
+           instance=place_order.PlaceOrder(catalog.CatalogPrices(facade), stored),
+       )
+
+
+   def populate_dependencies(container: punq.Container) -> punq.Container:
+       orders.inject(container, catalog.inject(container))
+       return container
+   ```
+
+## Use a use case in the admin
+
+Example: staff link a relative to a resident by the e-mail of the
+relative's account, which lives in another module.
+
+1. Red: an admin test with the Django test client (`admin_client`): the
+   form saves a known value and shows an error for an unknown one.
+2. A form field in `views/forms.py` receives the use case in its
+   constructor and turns the typed value into what the model stores in
+   `clean` (an e-mail into the id of an account), raising
+   `ValidationError` with a text for staff.
+3. The admin class takes `HasContainer` first, as a view does, and
+   returns that field from `formfield_for_dbfield`:
+
+   ```python
+   @final
+   class KinshipAdmin(HasContainer, admin.ModelAdmin[Kinship]):
+       @override
+       def formfield_for_dbfield(self, db_field, request, **kwargs):
+           if db_field.name == 'relative':
+               return RelativeField(self.resolve(find_relative.FindRelative))
+           return super().formfield_for_dbfield(db_field, request, **kwargs)
+   ```
+
+4. A model that only code writes (a log, a copy kept by events) is still
+   registered, because the Django check X012 wants every model in the
+   admin; `has_add_permission`, `has_change_permission` and
+   `has_delete_permission` that return `False` keep it read-only.
 
 ## Move a computation to Rust inside the monolith
 
@@ -650,6 +705,15 @@ Rust (sqlx):
 3. Write a `down` file where the change can be undone.
 4. Queries only with `sqlx::query!` and `sqlx::query_as!`, mapped into
    immutable domain objects in `infra/`.
+
+## Write a test value that looks like a secret
+
+gitleaks scans every commit of the history, and a public test vector
+written as a literal key (the RFC 6238 secret as `key='GEZD…'`) fails
+`make security` and CI; the commit then has to be rewritten. Build such
+a value in the test from its plain form instead
+(`base64.b32encode(b'12345678901234567890')`), and never widen the rules
+of gitleaks for `tests/`.
 
 ## Remove the example
 
