@@ -811,6 +811,11 @@ Rules:
   timeout (pytest-timeout).
 - **Test file names** say what is tested, never an Issue number
   (`test_remote.py`, not `test_remote_42.py`).
+- **`services/core/tests/` is a package**: every folder in it has an empty
+  `__init__.py`, a new folder too. Files of the same name may then live in
+  different folders, each folder may have its own `conftest.py`, and a fake
+  shared by several test files lives in one module of `tests/` and is
+  imported from there (`from tests.plugins.images_server import BROKEN`).
 
 Gates (CI fails below them; never lower a gate):
 
