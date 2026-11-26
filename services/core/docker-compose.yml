@@ -48,6 +48,8 @@ services:
         dockerfile: ./docker/django/Dockerfile
         args:
           DJANGO_ENV: development
+        labels:
+          inputs: "${CORE_INPUTS:-}"
         cache_from:
           - "${CORE_IMAGE:-core:dev}"
           - "core:latest"

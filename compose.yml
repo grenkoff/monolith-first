@@ -15,6 +15,8 @@ x-core: &core
       DJANGO_ENV: development
       UID: ${UID:-1000}
       GID: ${GID:-1000}
+    labels:
+      inputs: "${CORE_INPUTS:-}"
   logging: *logging
   volumes:
     - ./services/core:/code
