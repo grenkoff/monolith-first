@@ -15,11 +15,11 @@ def _problems(name: str, text: str) -> list[str]:
 
 
 @pytest.mark.parametrize('layout', ['site/layout.html', 'layout/base.html'])
-def test_module_template_may_extend_the_site_layout(layout: str) -> None:
+def test_site_layout_may_be_extended(layout: str) -> None:
     assert not _problems(_CATALOG, f'{{% extends "{layout}" %}}')
 
 
-def test_module_template_may_include_its_own_templates() -> None:
+def test_own_templates_may_be_included() -> None:
     assert not _problems(_CATALOG, '{% include "catalog/card.html" %}')
 
 
@@ -48,5 +48,5 @@ def test_link_to_another_module_passes() -> None:
         'server/common/django/templates/design/index.html',
     ],
 )
-def test_templates_outside_modules_are_not_checked(name: str) -> None:
+def test_templates_outside_modules_pass(name: str) -> None:
     assert not _problems(name, '{% include "orders/summary.html" %}')

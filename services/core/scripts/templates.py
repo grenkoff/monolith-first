@@ -9,6 +9,7 @@ from typing import Final, Protocol, final, override
 import attrs
 
 _ROOT: Final = Path('server')
+_MODULES: Final = ('server', 'apps')
 _SHARED: Final = frozenset(('layout', 'site'))
 _TAG: Final = re.compile(
     r'\{%-?\s*(?:extends|include)\s+[\'"]([^\'"/]+)/',
@@ -24,6 +25,34 @@ class Report(Protocol):
 
 @final
 @attrs.define(slots=True, frozen=True)
+class ModuleTemplate(Report):
+    """One template that may extend or include those of another module."""
+
+    _name: str
+    _text: str
+
+    @override
+    def problems(self) -> Iterator[str]:
+        """Yields one line per template of another module it uses."""
+        parts = PurePosixPath(self._name).parts
+        if parts[:2] != _MODULES:
+            return
+        allowed = _SHARED | {parts[len(_MODULES)]}
+        for found in _TAG.finditer(self._text):
+            if found.group(1) not in allowed:
+                yield self._problem(found.start())
+
+    def _problem(self, position: int) -> str:
+        """Returns the line that reports the tag at the position."""
+        number = self._text.count('\n', 0, position) + 1
+        return (
+            f'{self._name}:{number}: a module uses only its own '
+            'templates and the site layout'
+        )
+
+
+@final
+@attrs.define(slots=True, frozen=True)
 class TemplateReport(Report):
     """Templates of modules that extend or include those of another module."""
 
@@ -33,17 +62,7 @@ class TemplateReport(Report):
     def problems(self) -> Iterator[str]:
         """Yields one line per template of another module."""
         for name, text in self._templates.items():
-            parts = PurePosixPath(name).parts
-            if parts[:2] != ('server', 'apps'):
-                continue
-            allowed = _SHARED | {parts[2]}
-            for found in _TAG.finditer(text):
-                if found.group(1) not in allowed:
-                    number = text.count('\n', 0, found.start()) + 1
-                    yield (
-                        f'{name}:{number}: a module uses only its own '
-                        'templates and the site layout'
-                    )
+            yield from ModuleTemplate(name, text).problems()
 
 
 if __name__ == '__main__':
