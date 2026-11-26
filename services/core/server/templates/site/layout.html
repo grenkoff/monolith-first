@@ -1,0 +1,12 @@
+{% extends "layout/base.html" %}
+{% block home %}{% url 'catalog:home' %}{% endblock home %}
+{% block navigation %}
+  <ul class="flex flex-wrap gap-4">
+    <li>
+      <a href="{% url 'catalog:home' %}" class="ds-link">Products</a>
+    </li>
+    <li>
+      <a href="{% url 'catalog:search' %}" class="ds-link">Search</a>
+    </li>
+  </ul>
+{% endblock navigation %}

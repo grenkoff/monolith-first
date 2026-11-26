@@ -154,6 +154,7 @@ TEMPLATES = [
         'DIRS': [
             # Contains plain text templates, like `robots.txt`:
             BASE_DIR.joinpath('server', 'common', 'django', 'templates'),
+            BASE_DIR.joinpath('server', 'templates'),
         ],
         'OPTIONS': {
             'context_processors': [
