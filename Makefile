@@ -2,9 +2,15 @@ SHELL := /bin/bash
 .DEFAULT_GOAL := help
 CORE := services/core
 NATIVE := $(CORE)/native
-COMPOSE := env UID=$(shell id -u) GID=$(shell id -g) CORE_IMAGE=core:$(notdir $(CURDIR)) \
+CORE_IMAGE := core:$(notdir $(CURDIR))
+CORE_INPUTS := $(shell cd $(CORE) && git ls-files -z -- docker/django native poetry.lock pyproject.toml | \
+  xargs -0 cat | sha256sum | cut -c1-16)
+COMPOSE := env UID=$(shell id -u) GID=$(shell id -g) CORE_IMAGE=$(CORE_IMAGE) CORE_INPUTS=$(CORE_INPUTS) \
   IMAGES_IMAGE=images:$(notdir $(CURDIR)) docker compose
 CORE_COMPOSE := $(COMPOSE) --project-name $(notdir $(CURDIR))-core
+CORE_BUILD := { $(CORE_COMPOSE) build web || { \
+  test "$$(docker image inspect --format '{{ index .Config.Labels "inputs" }}' $(CORE_IMAGE))" = '$(CORE_INPUTS)' && \
+  echo 'core: the build failed, the image in place has the same inputs and runs' >&2; }; }
 PYTHON_VERSION := $(shell cat $(CORE)/.python-version)
 POETRY_VERSION := $(shell sed -n "s/.*POETRY_VERSION=\([0-9.]*\).*/\1/p" $(CORE)/docker/django/Dockerfile)
 RUST_COVERAGE_IGNORE := '(^|/)(main|build)\.rs$$'
@@ -92,7 +98,7 @@ endif
 
 .PHONY: architecture
 architecture: env
-	cd $(CORE) && $(CORE_COMPOSE) build web
+	cd $(CORE) && $(CORE_BUILD)
 	$(COMPOSE) config --format json | \
 	  (cd $(CORE) && $(CORE_COMPOSE) run --rm --no-deps -T web ./docker/django/architecture.sh)
 
@@ -119,7 +125,7 @@ rust:
 security: env
 	gitleaks git --no-banner --redact .
 	cargo deny --locked check advisories
-	cd $(CORE) && $(CORE_COMPOSE) build web && \
+	cd $(CORE) && $(CORE_BUILD) && \
 	  $(CORE_COMPOSE) run --rm --no-deps web pip-audit --desc
 
 .PHONY: duplicates
@@ -159,17 +165,17 @@ mutants-rust:
 
 .PHONY: mutants-core
 mutants-core: env
-	cd $(CORE) && $(CORE_COMPOSE) build web && \
+	cd $(CORE) && $(CORE_BUILD) && \
 	  $(CORE_COMPOSE) run --rm web ./docker/django/mutants.sh
 
 .PHONY: core
 core: env
-	cd $(CORE) && $(CORE_COMPOSE) build web && \
+	cd $(CORE) && $(CORE_BUILD) && \
 	  $(CORE_COMPOSE) run --rm web ./docker/django/ci.sh
 
 .PHONY: ty
 ty: env
-	cd $(CORE) && $(CORE_COMPOSE) build web && \
+	cd $(CORE) && $(CORE_BUILD) && \
 	  $(CORE_COMPOSE) run --rm --no-deps web ty check
 
 .PHONY: up
