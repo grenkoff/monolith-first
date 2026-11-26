@@ -1291,6 +1291,12 @@ an edit made from Windows drops the executable bit of a script
 `wsl.exe -d <distribution> --cd <path> -- <command>`, and anything longer
 than one line as a script file passed to `bash`: PowerShell adds a BOM and
 CRLF to text piped into `wsl.exe` and breaks the quoting of `bash -c`.
+Windows PowerShell 5.1 also breaks quotes inside the arguments of native
+programs, so titles and bodies of Issues and pull requests go to `gh`
+inside such a script or through files (`--body-file`). When `gh`,
+`git fetch` and Docker pulls time out inside WSL while Windows is online,
+WSL has lost its network: ask the human to run `wsl --shutdown` and start
+again.
 
 Required tools (`make doctor` checks them and prints what is missing):
 
