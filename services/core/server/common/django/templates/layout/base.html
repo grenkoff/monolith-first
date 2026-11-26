@@ -23,11 +23,12 @@
   </head>
   <body class="flex min-h-screen flex-col">
     <header class="ds-header">
-      <nav class="ds-container flex items-center justify-between py-4">
+      <nav class="ds-container flex flex-wrap items-center justify-between gap-4 py-4">
         <a
-          href="/"
+          href="{% block home %}/{% endblock home %}"
           class="font-heading text-xl font-semibold"
         >{{ site_name }}</a>
+        {% block navigation %}{% endblock navigation %}
         {% if theme_switcher %}
           <site-theme hidden>
             <label class="flex items-center gap-2 text-sm">
@@ -51,7 +52,10 @@
       {% block content %}{% endblock content %}
     </main>
     <footer class="ds-footer">
-      <p class="ds-container py-6">{{ site_name }}</p>
+      <div class="ds-container flex flex-wrap justify-between gap-4 py-6">
+        <p>{{ site_name }}</p>
+        {% block footer %}{% endblock footer %}
+      </div>
     </footer>
   </body>
 </html>
