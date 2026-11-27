@@ -31,6 +31,11 @@ make up       # starts the site on http://localhost:8000
 make e2e      # checks that an order reaches the catalog through the outbox
 ```
 
+Staff sign in to the Django admin at http://localhost:8000/admin/ and,
+once signed in, switch the theme of the whole site from the header. The
+first one is created with
+`docker compose exec core python manage.py createsuperuser`.
+
 A private repository works too, but GitHub protects its branches only on
 a paid plan. The agent does the rest of the first steps of
 [`AGENTS.md`](AGENTS.md) ("Getting started") by itself: the `develop`

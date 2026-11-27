@@ -123,8 +123,11 @@ the template speaks English only.
 3. The language switcher is a form in `layout/base.html` that posts
    `language` and `next` to `set_language`
    (`path('i18n/', include('django.conf.urls.i18n'))`, outside
-   `i18n_patterns`): it works without JavaScript and stays on the same
-   page.
+   `i18n_patterns`) and stays on the same page. Like the theme of staff
+   in `appearance/choice.html`, its `<select>` sits in `site-choice`,
+   which sends the form as soon as the choice changes, and its button
+   sits in `<noscript>`, so visitors see no button and the form still
+   works without JavaScript.
 4. Texts of templates and code go through `{% translate %}` and
    `gettext_lazy`; `docker compose run --rm web python manage.py
    makemessages -l <language>` writes `locale/<language>/LC_MESSAGES/django.po`.
@@ -810,7 +813,8 @@ Once the first real module exists, in its own pull request:
    `tests/test_apps/test_catalog/` and `tests/test_apps/test_orders/`,
    and the links of the example in `server/templates/site/layout.html`
    with `test_example_pages_show_the_site_navigation`, replaced by the
-   pages of the new module.
+   pages of the new module. The module `appearance` (the theme that staff
+   choose in the header) is not part of the example and stays.
 2. The `images` service, unless the product keeps photos:
    `services/images/` and its workspace member, `proto/images/` and the
    generated `server/contracts/images/` (`make proto`), the service and
@@ -826,8 +830,7 @@ Once the first real module exists, in its own pull request:
    the `exclude` of the root `Cargo.toml`.
 4. The checks that walk the example, rewritten for the new module, not
    only pointed at it: the requests of `scripts/e2e.sh`, the product page
-   of `tests/browser/` (the theme switcher stays unless the product drops
-   it), and the tests of the architecture checks that build their
+   of `tests/browser/` (the tests of the theme stay), and the tests of the architecture checks that build their
    registries from the real `server.apps.catalog` and `orders`
    (`tests/test_scripts/test_keys.py`, `test_relations.py`,
    `test_facade_transactions.py`).

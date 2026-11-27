@@ -12,8 +12,9 @@ in every theme.
 |------|---------------|
 | `services/core/server/common/django/styles/themes.css` | the themes: one block `[data-theme="<name>"]` per theme that sets every token |
 | `services/core/server/common/django/styles/site.css` | Tailwind with its default palette, fonts, radii and shadows switched off, the tokens as Tailwind values, the components |
-| `services/core/server/common/django/templates/layout/base.html` | the layout every page extends; `data-theme` on `<html>`; the blocks `home`, `navigation` and `footer` |
-| `services/core/server/templates/site/layout.html` | the layout of the site: its navigation and footer links, extended by every page of a module |
+| `services/core/server/common/django/templates/layout/base.html` | the layout every page extends; `data-theme` on `<html>`; the blocks `home`, `navigation`, `tools` and `footer` |
+| `services/core/server/templates/site/layout.html` | the layout of the site: its navigation and footer links and the theme dropdown of staff, extended by every page of a module |
+| `services/core/server/apps/appearance/` | the theme of the site that staff choose in the header, the latest choice in force |
 | `services/core/server/common/django/templates/design/index.html` | the page `/design/` |
 | `services/core/scripts/design.py` | the check run by `make core` |
 
@@ -48,8 +49,11 @@ they carry no brand.
 | `warm` | cream and brown, terracotta accent, rounded type, pill buttons, soft shadows |
 | `bold` | near black, lime accent, monospace headings, square corners, no shadows |
 
-The site picks one with `DJANGO_THEME`; a value outside the list stops
-the start. To add a theme, add its block to `themes.css` with every
+The site starts with the theme of `DJANGO_THEME`; a value outside the
+list stops the start. Signed-in staff see a dropdown of the themes in the
+header and switch the whole site to another one at once; every visitor
+then gets it, and the latest choice wins over `DJANGO_THEME`. Visitors
+never switch the theme for themselves. To add a theme, add its block to `themes.css` with every
 token and its name to `SITE_THEMES` in
 `server/settings/components/common.py`. To brand a theme for a project,
 change its tokens, never the components.

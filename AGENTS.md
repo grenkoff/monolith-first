@@ -364,18 +364,21 @@ JavaScript; JavaScript only improves them (progressive enhancement).
    its attributes and children, so the page works before it loads and
    without JavaScript. A template loads it with
    `<script type="module" src="{% static 'components/<element>.js' %}">`;
-   no inline scripts, no `on*=` attributes. Examples: `site-theme`
-   (theme switcher, `localStorage`, View Transitions) and `site-total`
-   (live total, `Intl.NumberFormat`, constraint validation).
+   no inline scripts, no `on*=` attributes. Examples: `site-choice`
+   (a dropdown that sends its form once the choice changes, with the
+   button in `<noscript>`) and `site-total` (live total,
+   `Intl.NumberFormat`, constraint validation).
 3. **One design system.** Every page is built from its components and
    styled only by its tokens (colours, fonts, spacing, radii, shadows) as
    Tailwind classes; no colour, size or font written by hand in a
    template. A new page therefore matches the rest of the site.
 4. **Three themes.** The design system ships three themes on the same
-   components (`classic`, `warm`, `bold`); a project picks one with
-   `DJANGO_THEME` in "A new product" and may let its visitors switch.
-   Tokens, themes and components: `docs/design-system.md`; every
-   component in every theme: `/design/`.
+   components (`classic`, `warm`, `bold`); a project starts with the one
+   it picks with `DJANGO_THEME` in "A new product", and staff switch the
+   whole site to another from the dropdown in the header (the module
+   `appearance`, kept when the example is removed). Visitors never
+   switch it for themselves. Tokens, themes and components:
+   `docs/design-system.md`; every component in every theme: `/design/`.
 5. **Accessible by default**: semantic HTML, labels on every control,
    keyboard focus visible, contrast of the tokens checked.
 

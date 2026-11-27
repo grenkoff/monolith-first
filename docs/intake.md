@@ -42,7 +42,7 @@ it. Ask nothing later that this page could have asked.
 | 4 | Who signs in, and what may each role do? (only staff in the admin, or visitors too) | auth and permissions | `accounts`, the admin |
 | 5 | Must visitors pay or book online? Which provider, if any? | a payment or booking module, a service to isolate | the plan; payments are a split criterion |
 | 6 | In which languages is the site? | Django i18n | `LANGUAGES`, `locale/` |
-| 7 | Which theme: `classic`, `warm` or `bold`? May visitors switch? | the look of every page | `DJANGO_THEME`, `DJANGO_THEME_SWITCHER` |
+| 7 | Which theme to start with: `classic`, `warm` or `bold`? (staff switch it later from the header) | the look of every page | `DJANGO_THEME` |
 | 8 | Name, logo and brand colours? | the header, the favicon, the tokens of the theme | `DJANGO_SITE_NAME`, `static/site/favicon.svg`, `themes.css` |
 | 9 | Contacts: address, phone, e-mail, opening hours, map? | the footer and the contacts page | a template, settings |
 | 10 | Anything that must not happen? (no visitor accounts, no cookies banner, …) | limits of the plan | the plan |
@@ -66,13 +66,11 @@ show `/design/` after the first build.
    - the recipes of `docs/cookbook.md` add pages, endpoints, events;
    - brand the theme by changing its tokens in `themes.css`, never the
      components; `make core` checks the contrast;
-   - set `DJANGO_SITE_NAME`, `DJANGO_THEME` and
-     `DJANGO_THEME_SWITCHER` in `config/.env.template`; tests set the
-     settings they depend on themselves, so they do not follow the
-     template;
-   - when visitors may not switch themes, remove the `site-theme`
-     component with its setting, its markup in `layout/base.html` and its
-     tests, the browser test included, instead of turning it off.
+   - set `DJANGO_SITE_NAME` and `DJANGO_THEME` in
+     `config/.env.template`; tests set the settings they depend on
+     themselves, so they do not follow the template;
+   - keep the module `appearance`: staff switch the theme of the whole
+     site from the header.
 4. Remove the example (`catalog`, `orders`, the `images` service) once
    the first real module exists, in its own pull request.
 5. `make up` shows the site; `make check` is green before each pull
