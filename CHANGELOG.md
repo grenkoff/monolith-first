@@ -2,6 +2,57 @@
 
 Every release of this project, built by `make changelog` from Conventional Commits.
 
+## v2026.11.27
+
+### Features
+
+- **scripts**: Report comments and tool directives on added lines
+- **core**: Answer ok on the health endpoint of the http api
+- **core**: Report module templates that extend or include those of another module
+- **core**: Give the site its own layout with the navigation of the example
+
+### Refactoring
+
+- **core**: Check each module template in an object of its own
+- **core**: Count the lines before a tag on a slice of the template
+
+### Documentation
+
+- **agents**: Fix the first steps of a project created from the template
+- **agents**: Allow auto-merge in the first steps of a project
+- **agents**: Limit the forbidden languages to our own code and tools
+- **agents**: Say that vulture already knows the standard django names
+- **agents**: Rerun make check in a fresh worktree when ci disagrees
+- **agents**: Run commands inside wsl when the agent runs on windows
+- **intake**: Ask about sensitive data, outside systems and themes in plan mode
+- **intake**: Remove an unused theme switcher instead of turning it off
+- **cookbook**: Add a recipe to translate the site
+- **cookbook**: Rewrite the checks of the example when removing it
+- **cookbook**: Keep the health endpoint and drop the shared code of the example
+- **agents**: Say where the site layout and site pages live
+- Say that every folder of the tests of core is a package
+- List the django hooks and the manager name that the checks of core allow
+- Add recipes for admin use cases, test secrets, long view modules and facades
+- Tell agents on windows how to pass quotes to gh and when wsl lost its network
+- Say when the targets of core run the image in place
+- Add cookbook recipes for signing in and for files and streams of a service
+
+### Build
+
+- **core**: Name the compose project of core after its worktree
+- **core**: Drop the dockerfile frontend pin that needs docker hub
+- **core**: Compile stale translations in every core container and for mutmut
+- **core**: Show surviving mutants before mutmut cleans up
+- Tag the images of core and images after their worktree
+- **core**: Check the templates of modules in make architecture
+- **core**: Make templatetags a layer of a module next to urls and admin
+- **core**: Let vulture skip common django hooks and allow a manager named objects
+- **core**: Run the image in place when its build fails and its inputs did not change
+
+### CI
+
+- **tooling**: Reject added comments and shell scripts that are not executable
+
 ## v2026.11.23
 
 ### Dependencies
