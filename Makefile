@@ -20,6 +20,7 @@ DEVELOP_CONTRACTS := $(shell git ls-tree -r --name-only origin/develop -- proto 
 LOCKED = $(shell grep -A1 '^name = "$(1)"' $(CORE)/poetry.lock | sed -n 's/^version = "\(.*\)"/\1/p')
 UVX := uvx -q --python $(PYTHON_VERSION)
 PLAYWRIGHT := 1.64.1
+BROWSER_STAFF := browser-staff
 
 .PHONY: help
 help:
@@ -150,8 +151,12 @@ browser:
 	docker build -q -t monolith-first-browser \
 	  --build-arg PLAYWRIGHT=$(PLAYWRIGHT) \
 	  --build-arg PYTEST=$(call LOCKED,pytest) tests/browser
+	$(COMPOSE) exec -T core python manage.py shell -v 0 -c \
+	  "from django.contrib.auth import get_user_model; users = get_user_model().objects; \
+	  users.filter(username='$(BROWSER_STAFF)').exists() or \
+	  users.create_superuser('$(BROWSER_STAFF)', password='$(BROWSER_STAFF)')"
 	docker run --rm --network host --user "$$(id -u):$$(id -g)" \
-	  -e HOME=/tmp -e CORE_URL="$${CORE_URL:-http://localhost:8000}" \
+	  -e HOME=/tmp -e CORE_URL="$${CORE_URL:-http://localhost:8000}" -e STAFF=$(BROWSER_STAFF) \
 	  -v "$$PWD/tests/browser:/tests:ro" monolith-first-browser \
 	  python -m pytest -q -p no:cacheprovider
 
