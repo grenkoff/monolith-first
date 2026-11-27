@@ -37,41 +37,36 @@ def _tags(client: Client, url: str) -> list[_Tag]:
     return _Tags(client.get(url).content.decode()).found
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     'tag',
     [
-        ('site-theme', (('hidden', None),)),
+        ('site-choice', ()),
         ('option', (('value', 'classic'), ('selected', None))),
         ('option', (('value', 'warm'),)),
         ('option', (('value', 'bold'),)),
+        ('noscript', ()),
         (
             'script',
-            (('type', 'module'), ('src', '/static/components/site-theme.js')),
+            (('type', 'module'), ('src', '/static/components/site-choice.js')),
         ),
     ],
 )
-def test_header_offers_the_themes(
-    client: Client,
+def test_header_offers_staff_the_themes(
+    admin_client: Client,
     settings: LazySettings,
     tag: _Tag,
 ) -> None:
     settings.SITE_THEME = 'classic'
-    settings.SITE_THEME_SWITCHER = True
 
-    assert tag in _tags(client, reverse('catalog:home'))
+    assert tag in _tags(admin_client, reverse('catalog:home'))
 
 
 @pytest.mark.django_db
-def test_switcher_is_left_out_when_turned_off(
-    client: Client,
-    settings: LazySettings,
-) -> None:
-    settings.SITE_THEME_SWITCHER = False
-
+@pytest.mark.parametrize('element', ['site-choice', 'site-theme'])
+def test_visitors_get_no_theme_switcher(client: Client, element: str) -> None:
     response = client.get(reverse('catalog:home'))
 
-    assert 'site-theme' not in response.content.decode()
+    assert element not in response.content.decode()
 
 
 @pytest.mark.django_db

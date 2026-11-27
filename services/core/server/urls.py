@@ -19,6 +19,7 @@ from dmr.plugins.msgspec import MsgspecSerializer
 from dmr.routing import Router, build_404_handler, build_500_handler, path
 from health_check.views import HealthCheckView
 
+from server.apps.appearance.views import urls as appearance_page_urls
 from server.apps.catalog.api import urls as catalog_api_urls
 from server.apps.catalog.views import urls as catalog_page_urls
 from server.apps.orders.api import urls as orders_api_urls
@@ -75,6 +76,7 @@ urlpatterns = [
         name='v1_redoc',
     ),
     # Pages:
+    path('', include((appearance_page_urls.urlpatterns, 'appearance'))),
     path('', include((catalog_page_urls.urlpatterns, 'catalog'))),
     path('', include((orders_page_urls.urlpatterns, 'orders'))),
     path(
