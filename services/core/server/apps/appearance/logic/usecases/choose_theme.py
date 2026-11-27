@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, final
 
 import attrs
 
+from server.apps.appearance.logic.themes import UnknownThemeError
+
 if TYPE_CHECKING:
     from server.apps.appearance.logic.themes import Themes
 
@@ -19,4 +21,7 @@ class ChooseTheme:
     _names: tuple[str, ...]
 
     def __call__(self, name: str) -> None:
-        """Keeps the theme as the choice of the site."""
+        """Keeps the theme as the choice of the site, or refuses an unknown one."""
+        if name not in self._names:
+            raise UnknownThemeError(name)
+        self._themes.keep(name)

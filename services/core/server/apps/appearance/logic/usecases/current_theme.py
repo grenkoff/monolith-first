@@ -20,4 +20,4 @@ class CurrentTheme:
 
     def __call__(self) -> str:
         """Returns the name of the theme of the site."""
-        return self._default
+        return self._themes.current(self._default)
