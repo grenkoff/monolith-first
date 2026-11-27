@@ -41,6 +41,7 @@ def test_example_pages_show_the_site_navigation(
     assert _SEARCH_LINK in header
 
 
+@pytest.mark.django_db
 def test_design_page_has_no_module_links(client: Client) -> None:
     response = client.get(reverse('design'))
 
