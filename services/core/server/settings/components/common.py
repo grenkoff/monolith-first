@@ -142,8 +142,6 @@ SITE_THEME = config(
     cast=Choices(SITE_THEMES),
 )
 
-SITE_THEME_SWITCHER = config('DJANGO_THEME_SWITCHER', default=True, cast=bool)
-
 
 # Templates
 # https://docs.djangoproject.com/en/6.1/ref/templates/api
@@ -167,6 +165,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.request',
                 'server.common.django.context.site',
+                'server.apps.appearance.views.context.theme_context',
             ],
         },
     },

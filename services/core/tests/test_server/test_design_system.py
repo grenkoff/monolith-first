@@ -20,6 +20,7 @@ def test_pages_carry_the_theme_of_the_site(
     assert f'data-theme="{theme}"' in response.content.decode()
 
 
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     'fragment',
     [

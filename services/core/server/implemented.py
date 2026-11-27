@@ -2,11 +2,12 @@
 
 import punq
 
-from server.composition import catalog, orders, outbox
+from server.composition import appearance, catalog, orders, outbox
 
 
 def populate_dependencies(container: punq.Container) -> punq.Container:
     """Registers the objects of every module in the container."""
+    appearance.inject(container)
     orders.inject(container, catalog.inject(container))
     outbox.inject(container)
     return container

@@ -1,0 +1,33 @@
+{% load static %}
+{% if user.is_staff %}
+  <script
+    type="module"
+    src="{% static 'components/site-choice.js' %}"
+  ></script>
+  <form
+    method="post"
+    action="{% url 'appearance:theme' %}"
+    class="flex items-center gap-2 text-sm"
+  >
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <site-choice>
+      <label class="flex items-center gap-2">
+        <span>Theme</span>
+        <select name="theme" class="ds-input py-1">
+          {% for name in themes %}
+            <option
+              value="{{ name }}"
+              {% if name == theme %}selected{% endif %}
+            >
+              {{ name }}
+            </option>
+          {% endfor %}
+        </select>
+      </label>
+    </site-choice>
+    <noscript>
+      <button class="ds-button-quiet py-1">Apply</button>
+    </noscript>
+  </form>
+{% endif %}
