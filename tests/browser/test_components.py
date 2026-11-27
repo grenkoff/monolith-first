@@ -8,6 +8,7 @@ import pytest
 from playwright.sync_api import Browser, Page, Playwright, expect, sync_playwright
 
 _CORE: Final = os.environ.get('CORE_URL', 'http://localhost:8000')
+_STAFF: Final = os.environ.get('STAFF', 'browser-staff')
 
 
 @pytest.fixture(scope='module')
@@ -46,14 +47,39 @@ def product(playwright: Playwright) -> str:
     return identifier
 
 
-def test_switcher_restyles_the_page_and_remembers(page: Page) -> None:
+@pytest.fixture
+def staff(page: Page) -> Iterator[Page]:
+    """Signs staff in and puts back the theme of the site they found."""
+    page.goto('/admin/login/?next=/')
+    page.get_by_label('Username').fill(_STAFF)
+    page.get_by_label('Password').fill(_STAFF)
+    page.get_by_role('button', name='Log in').click()
+    found = page.locator('html').get_attribute('data-theme') or 'classic'
+    yield page
     page.goto('/')
-    page.get_by_label('Theme').select_option('bold')
-    expect(page.locator('html')).to_have_attribute('data-theme', 'bold')
+    page.get_by_label('Theme').select_option(found)
+    expect(page.locator('html')).to_have_attribute('data-theme', found)
 
-    page.reload()
 
-    expect(page.locator('html')).to_have_attribute('data-theme', 'bold')
+def test_staff_choice_restyles_the_site_at_once(staff: Page) -> None:
+    staff.goto('/')
+
+    staff.get_by_label('Theme').select_option('bold')
+
+    expect(staff.locator('html')).to_have_attribute('data-theme', 'bold')
+
+
+def test_visitors_see_the_theme_staff_chose(staff: Page, browser: Browser) -> None:
+    staff.goto('/')
+    staff.get_by_label('Theme').select_option('warm')
+    expect(staff.locator('html')).to_have_attribute('data-theme', 'warm')
+    visitor = browser.new_context(base_url=_CORE)
+
+    page = visitor.new_page()
+    page.goto('/')
+
+    expect(page.locator('html')).to_have_attribute('data-theme', 'warm')
+    visitor.close()
 
 
 def test_total_follows_the_quantity(page: Page, product: str) -> None:
